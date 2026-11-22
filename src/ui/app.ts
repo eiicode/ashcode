@@ -997,9 +997,11 @@ function redraw(): void {
     const pos = Math.round((state.scroll / Math.max(1, maxScroll)) * maxPos)
     const topRow = page - thumb - pos
     for (let row = 0; row < page; row += 1) {
+      // Solid block plus a matching background so the thumb reads as one filled
+      // cell regardless of the font's glyph weight; a shade character draws the rail.
       barRows.push(row >= topRow && row < topRow + thumb
-        ? { text: '┃', fg: palette.accent }
-        : { text: '│', fg: palette.sep })
+        ? { text: '█', fg: palette.accent, bg: palette.accent }
+        : { text: '░', fg: palette.sep })
     }
     scrollBarHit = { column: PAD + frameWidth, top: 2, height: page, maxScroll }
   } else {

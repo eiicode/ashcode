@@ -4,6 +4,14 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.8.2 — 2026-11-23
+
+### Changed
+
+- The scrollbar reads thicker without taking another column: the thumb is a filled
+  cell (`█` plus a matching background) and the track is drawn with `░` instead of a
+  thin `│`
+
 ## 1.8.1 — 2026-11-23
 
 ### Fixed
