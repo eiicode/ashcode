@@ -4,6 +4,14 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.5.1 — 2026-11-22
+
+### Fixed
+
+- `/language` never appeared in the slash-command completion list: it sat beyond
+  the first six entries. The list now shows eight entries and places `/language`
+  seventh
+
 ## 1.5.0 — 2026-11-22
 
 The UI is bilingual, and English is now the default — matching the docs.

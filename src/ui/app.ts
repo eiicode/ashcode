@@ -593,8 +593,8 @@ function completionItems(): string[] {
       .map(file => `@${file}`)
   }
   if (text.startsWith('/') && !text.includes(' ')) {
-    const commands = ['/help', '/new', '/sessions', '/resume ', '/model ', '/effort ', '/team ', '/key', '/plan', '/plan off', '/language ']
-    return commands.filter(command => command.startsWith(text)).slice(0, 6)
+    const commands = ['/help', '/new', '/sessions', '/resume ', '/model ', '/effort ', '/language ', '/plan', '/key', '/team ', '/plan off']
+    return commands.filter(command => command.startsWith(text)).slice(0, 8)
   }
   return []
 }
