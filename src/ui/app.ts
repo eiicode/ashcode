@@ -98,6 +98,10 @@ const state = {
 }
 
 let composer: string[] = ['']
+/** Column offsets (within the composer's border line) of the clickable stop button. */
+let stopHit: { start: number; end: number } | undefined
+/** Row index of the composer's bottom border in the last rendered frame. */
+let composerBottomRow = -1
 let cursorLine = 0
 let cursorCol = 0
 let quitArmedAt = 0
@@ -445,6 +449,9 @@ function composerLines(width: number): RLine[] {
       })
     })
   }
+  // DSH's composer starts two lines tall; keep the same minimum so the box does
+  // not visibly grow the moment the first character lands.
+  while (rows.length < 2) rows.push({ text: '', cursorAt: -1, placeholder: false })
 
   const enterMode = process.env.ASHCODE_ENTER === 'newline' ? 'newline' : 'send'
   const hint = enterMode === 'send' ? 'Enter 发送 · Alt+Enter 换行' : 'Enter 换行 · Ctrl+Enter 发送'
@@ -478,7 +485,28 @@ function composerLines(width: number): RLine[] {
       ],
     })
   }
-  out.push({ spans: [{ text: `╰${'─'.repeat(Math.max(0, width - 2))}╯`, fg: palette.accent }] })
+  // While a turn runs, the bottom border carries a clickable stop affordance so
+  // the escape hatch is visible instead of only living in --help.
+  const stopLabel = ' ■ Esc 停止 '
+  const borderWidth = Math.max(0, width - 2)
+  const stopWidth = textWidth(stopLabel)
+  if (state.busy && stopWidth + 4 <= borderWidth) {
+    const dashes = borderWidth - stopWidth
+    const leftDashes = Math.floor(dashes / 2)
+    stopHit = { start: 1 + leftDashes, end: 1 + leftDashes + stopWidth }
+    out.push({
+      spans: [
+        { text: '╰', fg: palette.accent },
+        { text: '─'.repeat(leftDashes), fg: palette.accent },
+        { text: stopLabel, fg: palette.err, bold: true },
+        { text: '─'.repeat(dashes - leftDashes), fg: palette.accent },
+        { text: '╯', fg: palette.accent },
+      ],
+    })
+  } else {
+    stopHit = undefined
+    out.push({ spans: [{ text: `╰${'─'.repeat(borderWidth)}╯`, fg: palette.accent }] })
+  }
   return out
 }
 let fileCache: { at: number; files: string[] } | undefined
@@ -861,7 +889,11 @@ function redraw(): void {
   debug(`draw scroll=${state.scroll} first=${visible[0]?.spans.map(span => span.text).join('') ?? ''}`)
 
   const chunks: TextChunk[] = []
-  const push = (line: RLine): void => { chunks.push(...lineChunks(line, PAD + frameWidth)) }
+  let pushedLines = 0
+  const push = (line: RLine): void => {
+    chunks.push(...lineChunks(line, PAD + frameWidth))
+    pushedLines += 1
+  }
   push(header)
   push({ spans: [{ text: '─'.repeat(frameWidth), fg: palette.sep }] })
   if (state.sidebar) {
@@ -872,6 +904,9 @@ function redraw(): void {
     }
   } else {
     for (const line of visible) push(dimSpan(line))
+    // Pad the transcript area so the status line and composer stay pinned to the
+    // bottom instead of sliding down while the first screenful fills up.
+    for (let index = visible.length; index < page; index += 1) push({ spans: [{ text: '' }] })
   }
   for (const line of modalLines) push(line)
   for (const line of completionRows) push(line)
@@ -882,6 +917,7 @@ function redraw(): void {
   push({ spans: [{ text: '' }] })
   push(status)
   for (const line of composerRows) push(line)
+  composerBottomRow = pushedLines - 1
   view.content = new StyledText(chunks)
 }
 
@@ -1616,6 +1652,14 @@ process.on('exit', () => {
 
 ;(view as unknown as { onMouse?: (event: { type?: string; x?: number; y?: number; scroll?: { direction?: string } }) => void }).onMouse = (event) => {
   if (process.env.ASHCODE_MOUSE === '0') return
+  // Stop button on the composer's bottom border, mirroring DSH's stop affordance.
+  if (event.type === 'down' && state.busy && stopHit !== undefined
+    && event.x !== undefined && event.y !== undefined
+    && event.y === composerBottomRow
+    && event.x >= PAD + stopHit.start && event.x < PAD + stopHit.end) {
+    void recoverHarness('cancel')
+    return
+  }
   if (event.type === 'down' && state.sidebar && event.x !== undefined && event.y !== undefined) {
     if (event.x >= PAD && event.x < PAD + 22 && event.y >= 2) {
       const item = sidebarItems[event.y - 2]
