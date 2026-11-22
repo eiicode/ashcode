@@ -6,6 +6,14 @@
 
 终端里的 DeepSeek Harness 客户端：对话、工具卡、审批、结构化提问、plan/build 模式、会话恢复、崩溃自恢复、用量统计。
 
+**快速开始** —— 需要 Windows 10/11、Node.js ≥ 24.9，以及你自己的 DeepSeek API Key：
+
+```powershell
+irm https://github.com/eiicode/ashcode/releases/latest/download/install.ps1 | iex
+```
+
+装完新开一个终端，输入 `ashcode` 即可。想先看脚本？[查看安装器](https://github.com/eiicode/ashcode/releases/latest/download/install.ps1) 或 [下载 zip](https://github.com/eiicode/ashcode/releases/latest)。
+
 <img src="docs/assets/screenshot.png" width="600" alt="ashcode：一次提问、一张工具卡、两张 Markdown 表格，状态栏显示 token 与费用">
 
 > **非官方客户端**：ashcode 是独立开源项目，与 DeepSeek 无隶属关系，也未获其背书。模型调用使用你自己的 API Key，受 DeepSeek API 服务条款约束。

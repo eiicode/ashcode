@@ -6,6 +6,14 @@ English | [中文](README.zh.md)
 
 A terminal client for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`): chat, tool cards, approvals, structured questions, plan/build mode, session resume, crash recovery, and usage/cost stats.
 
+**Quick start** — Windows 10/11, Node.js ≥ 24.9, and your own DeepSeek API key:
+
+```powershell
+irm https://github.com/eiicode/ashcode/releases/latest/download/install.ps1 | iex
+```
+
+Then open a new terminal and run `ashcode`. Prefer to read it first? [View the installer](https://github.com/eiicode/ashcode/releases/latest/download/install.ps1) or [download the zip](https://github.com/eiicode/ashcode/releases/latest).
+
 <img src="docs/assets/screenshot.png" width="600" alt="ashcode: a prompt, a tool card, two rendered Markdown tables, and a token/cost readout in the status bar">
 
 > **Unofficial client.** ashcode is an independent open-source project. It is not affiliated with, or endorsed by, DeepSeek. Model calls use your own API key and are subject to the DeepSeek API terms of service.
