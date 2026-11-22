@@ -11,6 +11,7 @@ import { homedir } from 'node:os'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { StdioSdkPort, type SessionEvent } from '../runtime/stdio-sdk.ts'
 import { makePalette } from './theme.ts'
+import { t, describeLang, getLang, resolveLang, setLang, type Lang } from './i18n.ts'
 import { textWidth, type Span } from './markdown.ts'
 import {
   planFromTool, renderBlocks, renderModal,
@@ -44,6 +45,29 @@ function resolveHome(): string {
 
 const dshHome = resolveHome()
 const isolatedHome = process.env.ASHCODE_HOME === undefined && !process.argv.includes('--home')
+
+// Language: ASHCODE_LANG wins, otherwise the saved preference, otherwise English.
+setLang(resolveLang())
+if (process.env.ASHCODE_LANG === undefined) loadSettings()
+
+/** `<home>/tui/settings.json` holds UI preferences such as the language. */
+function settingsFile(): string {
+  return join(dshHome, 'tui', 'settings.json')
+}
+
+function loadSettings(): void {
+  try {
+    const raw = JSON.parse(readFileSync(settingsFile(), 'utf8')) as { lang?: string }
+    if (raw.lang === 'zh' || raw.lang === 'en') setLang(raw.lang)
+  } catch { /* first run or unreadable: keep the default */ }
+}
+
+function saveSettings(): void {
+  try {
+    mkdirSync(join(dshHome, 'tui'), { recursive: true })
+    writeFileSync(settingsFile(), JSON.stringify({ lang: getLang() }, null, 2))
+  } catch { /* best effort */ }
+}
 
 interface Question {
   id: string
@@ -242,21 +266,21 @@ function todoLine(width: number): RLine {
   const active = state.todos.find(item => item.status === 'in_progress')
   const pending = state.todos.filter(item => item.status === 'pending').length
   const tail = active !== undefined
-    ? ` · 进行中: ${active.content}`
-    : pending > 0 ? ` · ${pending} 待处理` : ' · 全部完成'
+    ? t('todoActive', active.content)
+    : pending > 0 ? t('todoPending', pending) : t('todoDone')
   return {
     spans: [{
-      text: clipDisplay(`▸ 任务 ${done}/${total}${tail}`, width),
+      text: clipDisplay(`${t('todoPrefix', done, total)}${tail}`, width),
       fg: active !== undefined ? palette.accent : palette.dim,
     }],
   }
 }
 
 function headerLine(width: number): RLine {
-  const phaseLabel = state.phase === 'analyzing' ? '分析请求'
-    : state.phase === 'thinking' ? '深度思考'
-      : state.phase === 'tool' ? '执行工具'
-        : state.phase === 'responding' ? '生成回复' : ''
+  const phaseLabel = state.phase === 'analyzing' ? t('phaseAnalyzing')
+    : state.phase === 'thinking' ? t('phaseThinking')
+      : state.phase === 'tool' ? t('phaseTool')
+        : state.phase === 'responding' ? t('phaseResponding') : ''
   const busyText = state.busy
     ? `working ${((Date.now() - state.startedAt) / 1000).toFixed(0)}s${phaseLabel === '' ? '' : ` · ${phaseLabel}`}`
     : 'idle'
@@ -281,9 +305,9 @@ function headerLine(width: number): RLine {
 function statusLine(width: number): RLine {
   const left = state.note
   const presetLabel = (preset: string): string => {
-    if (preset === 'read-only') return '只读'
-    if (preset === 'workspace-write') return '工作区可写'
-    if (preset === 'danger-full-access') return '完全权限'
+    if (preset === 'read-only') return t('presetReadOnly')
+    if (preset === 'workspace-write') return t('presetWorkspaceWrite')
+    if (preset === 'danger-full-access') return t('presetDangerFullAccess')
     return preset
   }
   const rawName = sessionTitles[state.sessionId] ?? state.title
@@ -298,14 +322,14 @@ function statusLine(width: number): RLine {
     tokensPerSec = state.lastTurnOutput / (state.lastTurnMs / 1000)
   }
   let groups = [
-    `会话[${rawName === '' ? '(untitled)' : clipDisplay(rawName, 12)}]`,
-    `权限[${presetLabel(state.preset)}]`,
-    ...(APP_VERSION === '' ? [] : [`版本[${APP_VERSION}]`]),
-    ...(contextPct > 0 ? [`上下文[${contextPct}%]`] : []),
-    `回合[${state.turns}]`,
-    `步骤[${state.steps}]`,
-    `工具[${state.tools}次]`,
-    ...(tokensPerSec >= 1 ? [`速度[${Math.round(tokensPerSec)}t/s]`] : []),
+    t('statusSession', rawName === '' ? t('untitled') : clipDisplay(rawName, 12)),
+    t('statusPermission', presetLabel(state.preset)),
+    ...(APP_VERSION === '' ? [] : [t('statusVersion', APP_VERSION)]),
+    ...(contextPct > 0 ? [t('statusContext', contextPct)] : []),
+    t('statusTurn', state.turns),
+    t('statusStep', state.steps),
+    t('statusTool', state.tools),
+    ...(tokensPerSec >= 1 ? [t('statusSpeed', Math.round(tokensPerSec))] : []),
   ]
   const fits = (text: string): boolean => textWidth(left) + 1 + textWidth(text) <= width
   let right = groups.join(' · ')
@@ -314,11 +338,11 @@ function statusLine(width: number): RLine {
     right = groups.join(' · ')
   }
   if (!fits(right)) {
-    const shortened = rawName === '' ? '(untitled)' : clipDisplay(rawName, 6)
-    groups = [`会话[${shortened}]`, ...groups.slice(1)]
+    const shortened = rawName === '' ? t('untitled') : clipDisplay(rawName, 6)
+    groups = [t('statusSession', shortened), ...groups.slice(1)]
     right = groups.join(' · ')
   }
-  if (!fits(right)) groups = [`会话[${rawName === '' ? '(untitled)' : clipDisplay(rawName, 3)}]`]
+  if (!fits(right)) groups = [t('statusSession', rawName === '' ? t('untitled') : clipDisplay(rawName, 3))]
   right = groups.join(' · ')
   const hints = `${state.scroll > 0 ? `  ↑${state.scroll}` : ''}${search.active ? `  /${search.query}` : ''}`
   if (hints !== '' && fits(right + hints)) right += hints
@@ -462,7 +486,7 @@ function composerLines(width: number): RLine[] {
   const inner = Math.max(10, width - 4)
   const rows: Array<{ text: string; cursorAt: number; placeholder: boolean }> = []
   if (composer.length === 1 && composer[0] === '') {
-    rows.push({ text: '输入消息…', cursorAt: 0, placeholder: true })
+    rows.push({ text: t('composerPlaceholder'), cursorAt: 0, placeholder: true })
   } else {
     composer.forEach((text, lineIndex) => {
       const wrapped = wrapWithOffsets(text, inner)
@@ -481,8 +505,8 @@ function composerLines(width: number): RLine[] {
   while (rows.length < 2) rows.push({ text: '', cursorAt: -1, placeholder: false })
 
   const enterMode = process.env.ASHCODE_ENTER === 'newline' ? 'newline' : 'send'
-  const hint = enterMode === 'send' ? 'Enter 发送 · Alt+Enter 换行' : 'Enter 换行 · Ctrl+Enter 发送'
-  const left = '╭─ 输入 '
+  const hint = enterMode === 'send' ? t('composerHintSend') : t('composerHintNewline')
+  const left = t('composerLabel')
   const right = ` ${hint} ─╮`
   const dashes = Math.max(0, width - textWidth(left) - textWidth(right))
   const out: RLine[] = [{
@@ -514,7 +538,7 @@ function composerLines(width: number): RLine[] {
   }
   // While a turn runs, the bottom border carries a clickable stop affordance so
   // the escape hatch is visible instead of only living in --help.
-  const stopLabel = ' ■ Esc 停止 '
+  const stopLabel = t('composerStop')
   const borderWidth = Math.max(0, width - 2)
   const stopWidth = textWidth(stopLabel)
   if (state.busy && stopWidth + 4 <= borderWidth) {
@@ -569,7 +593,7 @@ function completionItems(): string[] {
       .map(file => `@${file}`)
   }
   if (text.startsWith('/') && !text.includes(' ')) {
-    const commands = ['/help', '/new', '/sessions', '/resume ', '/model ', '/effort ', '/team ', '/key', '/plan', '/plan off']
+    const commands = ['/help', '/new', '/sessions', '/resume ', '/model ', '/effort ', '/team ', '/key', '/plan', '/plan off', '/language ']
     return commands.filter(command => command.startsWith(text)).slice(0, 6)
   }
   return []
@@ -649,22 +673,22 @@ function pickerModal(): ModalSpec | undefined {
   if (picker.items.length === 0) {
     return {
       title: 'Sessions',
-      detail: ['当前工作区还没有持久化会话。'],
-      options: [{ label: '新建会话' }],
+      detail: [t('sessionsEmpty')],
+      options: [{ label: t('newSession') }],
       selected: 0,
-      hint: 'n 新建 · Esc 关闭',
+      hint: t('sessionsHint'),
     }
   }
   const start = Math.max(0, Math.min(picker.selected - 3, picker.items.length - 8))
   const windowItems = picker.items.slice(start, start + 8)
   return {
     title: `Sessions (${picker.items.length})`,
-    detail: ['Enter 切换 · n 新建 · d 删除 · Esc 关闭'],
+    detail: [t('sessionsSwitchHint')],
     options: windowItems.map(item => ({
       label: titleOf(item) === '' ? '(untitled)' : titleOf(item)
     })),
     selected: picker.selected - start,
-    hint: picker.deleteArmed ? `再按 d 删除 ${picker.items[picker.selected]?.id ?? ''}` : 'r 重命名',
+    hint: picker.deleteArmed ? t('deleteArmed', picker.items[picker.selected]?.id ?? '') : t('renameHint'),
   }
 }
 
@@ -673,10 +697,10 @@ function keyModal(): ModalSpec | undefined {
   const masked = keyInput.value === '' ? '(empty)' : '*'.repeat(Math.min(48, keyInput.value.length))
   return {
     title: 'API Key',
-    detail: ['输入 DeepSeek API Key，保存到应用目录的 .env.local 并重启运行时。'],
-    options: [{ label: '保存', tone: 'ok' }],
+    detail: [t('keyDetail')],
+    options: [{ label: t('keySave'), tone: 'ok' }],
     selected: 0,
-    hint: 'Enter 保存 · Esc 取消',
+    hint: t('keyHint'),
     footer: `key: ${masked}`,
   }
 }
@@ -793,7 +817,7 @@ function chooserModal(): ModalSpec | undefined {
   const current = chooser.kind === 'model' ? state.model : state.effort
   return {
     title: chooser.kind === 'model' ? 'Model' : 'Reasoning effort',
-    detail: ['↑/↓ 选择 · Enter 应用（会重启运行时并开新会话）· Esc 取消'],
+    detail: [t('chooserHint')],
     options: chooser.items.map(item => ({
       label: item === current ? `● ${item}` : `  ${item}`,
       tone: item === current ? 'ok' as const : 'normal' as const,
@@ -939,7 +963,7 @@ function redraw(): void {
   for (const line of modalLines) push(line)
   for (const line of completionRows) push(line)
   if (quitArmedAt > 0) {
-    const banner = ' ⚠  再按一次 Ctrl+C 退出（3 秒内）· Esc 取消 '
+    const banner = t('quitBanner')
     push({ spans: [{ text: padTo(banner, frameWidth), fg: palette.bg, bg: palette.warn, bold: true }] })
   }
   push({ spans: [{ text: '' }] })
@@ -1289,7 +1313,7 @@ async function runLocalCommand(text: string): Promise<boolean> {
     const buffer = readFileSync(target)
     if (buffer.length > 8 * 1024 * 1024) { pushBlock({ kind: 'error', text: 'image larger than 8 MiB' }); return true }
     attachments.push({ name: basename(target), mimeType: mime, data: buffer.toString('base64') })
-    pushBlock({ kind: 'system', text: `attached ${basename(target)} (${Math.round(buffer.length / 1024)} KB) · 下一条消息一起发送` })
+    pushBlock({ kind: 'system', text: t('attachNote', basename(target), Math.round(buffer.length / 1024)) })
     return true
   }
   if (text === '/attach') {
@@ -1297,7 +1321,7 @@ async function runLocalCommand(text: string): Promise<boolean> {
     return true
   }
   if (text === '/team') {
-    pushBlock({ kind: 'system', text: `team: ${state.team ? 'on' : 'off'} · 用法 /team on|off（默认 ASHCODE_TEAM=1 开启）` })
+    pushBlock({ kind: 'system', text: t('teamNote', state.team ? 'on' : 'off') })
     return true
   }
   if (text === '/team on' || text === '/team off') {
@@ -1330,6 +1354,18 @@ async function runLocalCommand(text: string): Promise<boolean> {
   }
   if (text === '/key') {
     keyInput = { value: '' }
+    redraw()
+    return true
+  }
+  if (text.startsWith('/language')) {
+    const arg = text.slice('/language'.length).trim().toLowerCase()
+    if (arg === 'en' || arg === 'zh') {
+      setLang(arg)
+      saveSettings()
+      pushBlock({ kind: 'system', text: `language: ${describeLang()}` })
+    } else {
+      pushBlock({ kind: 'system', text: `language: ${describeLang()} · usage /language en|zh` })
+    }
     redraw()
     return true
   }
@@ -1604,7 +1640,7 @@ renderer.keyInput.on('keypress', (key: { name?: string; sequence?: string; ctrl?
     }
     if (Date.now() - quitArmedAt < 3000) { void shutdown(); return }
     quitArmedAt = Date.now()
-    state.note = '再按一次 Ctrl+C 退出'
+    state.note = t('quitNote')
     redraw()
     setTimeout(() => {
       if (Date.now() - quitArmedAt >= 2900) {
@@ -1743,7 +1779,7 @@ try {
   refreshSidebar()
   if (process.env.DEEPSEEK_API_KEY === undefined || process.env.DEEPSEEK_API_KEY === '') {
     keyInput = { value: '' }
-    state.note = '需要 API Key（/key 可重新设置）'
+    state.note = t('needKeyNote')
   }
   const resumedWith = parseResumeArg()
   if (resumedWith !== undefined) replaySession(resumedWith)

@@ -4,6 +4,22 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.5.0 — 2026-11-22
+
+The UI is bilingual, and English is now the default — matching the docs.
+
+### Added
+
+- `/language en|zh` plus the `ASHCODE_LANG` environment variable; the choice is
+  persisted to `<DSH home>/tui/settings.json`
+- Every user-visible string now lives in `src/ui/i18n.ts`, so a new label costs one
+  dictionary entry
+
+### Changed
+
+- The interface starts in English. `/language zh` restores the Chinese UI, which is
+  unchanged in content
+
 ## 1.4.0 — 2026-11-22
 
 Progress reporting moves closer to the DSH Web UI: reasoning is no longer

@@ -58,6 +58,7 @@ The first launch asks for an API key; change it later with `/key`.
 | `/team` | toggle agent teams |
 | `/attach <path>` | attach an image |
 | `/key` | set the API key |
+| `/language` | switch the UI language: `/language en` / `/language zh` |
 | `/plan` | plan mode |
 
 ## Architecture
@@ -100,6 +101,7 @@ npm run tui          # = bun src/ui/app.ts
 | `ASHCODE_MODEL` | `deepseek-flash` | model id |
 | `ASHCODE_EFFORT` | `high` | reasoning effort: `off` / `low` / `high` / `max` |
 | `ASHCODE_THEME` | `dark` | `dark` / `light` / `contrast` / `ansi` |
+| `ASHCODE_LANG` | `en` | UI language: `en` / `zh` (same as `/language`; the saved choice wins when the variable is unset) |
 | `ASHCODE_ENTER` | `send` | set to `newline` to make Enter insert a newline and Ctrl+Enter send |
 | `ASHCODE_TEAM` | off | `1` enables agent teams by default |
 | `ASHCODE_MOUSE` | on | `0` disables the mouse |

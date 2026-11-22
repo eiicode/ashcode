@@ -4,6 +4,19 @@
 
 本项目从 0.1.0 起记录。版本号与 `package.json` 保持一致；发布包命名 `ashcode-<version>-win-x64.zip`。
 
+## 1.5.0 — 2026-11-22
+
+界面支持中英双语，默认英文，与文档保持一致。
+
+### Added
+
+- `/language en|zh` 与 `ASHCODE_LANG` 环境变量；选择持久化到 `<DSH home>/tui/settings.json`
+- 所有界面文案收口到 `src/ui/i18n.ts`，新增一处文案只需加一条字典项
+
+### Changed
+
+- 界面默认英文；`/language zh` 可切回中文，中文文案内容与之前完全一致
+
 ## 1.4.0 — 2026-11-22
 
 进度展示向 DSH Web UI 靠拢：思考内容不再被截断，任务进度常驻可见。

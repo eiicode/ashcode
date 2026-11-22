@@ -1,6 +1,7 @@
 /** Block model and transcript renderers (tool cards, diffs, plans, modals). */
 import type { RGBA } from '@opentui/core'
 import { renderMarkdown, textWidth, wrapSpans, padDisplay, truncateDisplay, type MdStyles, type Span } from './markdown.ts'
+import { t } from './i18n.ts'
 import type { Palette } from './theme.ts'
 
 export type ToolStatus = 'running' | 'ok' | 'error'
@@ -330,13 +331,13 @@ export function renderBlocks(blocks: Block[], ctx: RenderContext): RLine[] {
           const lineCount = block.text.split('\n').filter(line => line.trim() !== '').length
           out.push({
             spans: [
-              { text: '✦ thinking', fg: ctx.palette.dim, dim: true },
-              { text: `${meta} · ${lineCount} line${lineCount === 1 ? '' : 's'} · Ctrl+T`, fg: ctx.palette.dim, dim: true },
+              { text: t('thinkingLabel'), fg: ctx.palette.dim, dim: true },
+              { text: `${meta}${lineCount === 1 ? t('thinkingMetaOne') : t('thinkingMetaMany', lineCount)}`, fg: ctx.palette.dim, dim: true },
             ],
           })
           break
         }
-        out.push({ spans: [{ text: `✦ thinking${meta}`, fg: ctx.palette.accent, dim: true }] })
+        out.push({ spans: [{ text: `${t('thinkingLabel')}${meta}`, fg: ctx.palette.accent, dim: true }] })
         for (const line of block.text.split('\n')) {
           out.push({ spans: [{ text: `  ${line}`, fg: ctx.palette.dim, dim: true }] })
         }

@@ -1,6 +1,9 @@
 /** Print a transcript layout sample (no renderer, no colors) for quick review. */
 import { renderBlocks } from '../src/ui/render.ts'
 import { makePalette } from '../src/ui/theme.ts'
+import { resolveLang, setLang } from '../src/ui/i18n.ts'
+
+setLang(resolveLang())
 
 const palette = makePalette(process.argv[2] ?? 'dark')
 const width = Number(process.argv[3] ?? 96)

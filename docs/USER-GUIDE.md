@@ -216,10 +216,12 @@ The right side of the header bar shows this session's usage:
 - `%c` cache hit rate = cache reads / (input + cache reads + cache writes)
 - `$` estimated cost; shown only when `ASHCODE_PRICE_*` is configured
 
-Bottom status bar: `Session[title] · Permission[workspace writable] · Version[1.1.0] · Context[38%] · Turn[31] · Step[233] · Tool[35 times] · Speed[207t/s]`
+Bottom status bar: `Session[title] · Perm[workspace-write] · Version[1.5.0] · Context[38%] · Turn[31] · Step[233] · Tools[35] · Rate[207t/s]`
 
-When the terminal narrows, the secondary items at the end are hidden in order (`Speed` → `Tool` → …), while `Session` / `Permission` / `Version` are kept preferentially.
-`Context` is the latest message's occupancy / the context window; `Speed` is this turn's average throughput (including tool wait time).
+When the terminal narrows, the secondary items at the end are hidden in order (`Rate` → `Tools` → …), while `Session` / `Perm` / `Version` are kept preferentially.
+`Context` is the latest message's occupancy / the context window; `Rate` is this turn's average throughput (including tool wait time).
+
+The UI language defaults to English. `/language zh` switches every label to Chinese, `/language en` switches back; the choice is saved to `<DSH home>/tui/settings.json`. `ASHCODE_LANG=en|zh` overrides it for one run.
 
 In a wide terminal (≥ 100 columns) a session bar appears on the left: the list of titles, with the current session highlighted by `▸`; **click any row with the mouse to switch**, and `Ctrl+B` shows/hides it.
 

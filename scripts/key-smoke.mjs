@@ -11,7 +11,7 @@ const home = join(process.env.TEMP ?? '.', 'ashcode-key-smoke')
 let raw = ''
 const child = pty.spawn(bunExe, ['src/ui/app.ts'], {
   name: 'xterm-256color', cols: 100, rows: 30, cwd: process.cwd(),
-  env: { ...process.env, DEEPSEEK_API_KEY: '', ASHCODE_HOME: home, ASHCODE_MOUSE: '0' },
+  env: { ...process.env, DEEPSEEK_API_KEY: '', ASHCODE_HOME: home, ASHCODE_MOUSE: '0', ASHCODE_LANG: 'zh' },
 })
 child.onData((data) => { raw += data })
 setTimeout(() => child.write('\u001b'), 9000)

@@ -10,7 +10,7 @@ if (!existsSync(bunExe)) { console.error('bun not found'); process.exit(2) }
 let raw = ''
 let exited = false
 const child = pty.spawn(bunExe, ['src/ui/app.ts'], {
-  name: 'xterm-256color', cols: 100, rows: 30, cwd: process.cwd(), env: { ...process.env, ASHCODE_MOUSE: '0' },
+  name: 'xterm-256color', cols: 100, rows: 30, cwd: process.cwd(), env: { ...process.env, ASHCODE_MOUSE: '0', ASHCODE_LANG: 'zh' },
 })
 child.onData((data) => { raw += data })
 child.onExit(() => { exited = true })

@@ -58,6 +58,7 @@ ashcode
 | `/team` | 智能体团队开关 |
 | `/attach <path>` | 附加图片 |
 | `/key` | 设置 API Key |
+| `/language` | 切换界面语言：`/language en` / `/language zh` |
 | `/plan` | plan 模式 |
 
 ## 架构
@@ -100,6 +101,7 @@ npm run tui          # = bun src/ui/app.ts
 | `ASHCODE_MODEL` | `deepseek-flash` | 模型 id |
 | `ASHCODE_EFFORT` | `high` | 推理等级 `off` / `low` / `high` / `max` |
 | `ASHCODE_THEME` | `dark` | `dark` / `light` / `contrast` / `ansi` |
+| `ASHCODE_LANG` | `en` | 界面语言：`en` / `zh`（等同 `/language`；未设置该变量时以已保存的选择为准） |
 | `ASHCODE_ENTER` | `send` | 设为 `newline` 则 Enter 换行、Ctrl+Enter 发送 |
 | `ASHCODE_TEAM` | 关 | `1` 默认开启智能体团队 |
 | `ASHCODE_MOUSE` | 开 | `0` 关闭鼠标 |
