@@ -59,6 +59,8 @@ const EN = {
 
   toolActive: '✳ Calling tool · {0}',
   toolMore: ' (+{0})',
+  toolGroupDone: '▸ {0} tools · {1}',
+  toolGroupRunning: '◐ {0}/{1} tools · running',
 } as const
 
 const ZH: Record<keyof typeof EN, string> = {
@@ -116,6 +118,8 @@ const ZH: Record<keyof typeof EN, string> = {
 
   toolActive: '✳ 正在调用工具 · {0}',
   toolMore: '（另 {0} 个）',
+  toolGroupDone: '▸ {0} 个工具 · {1}',
+  toolGroupRunning: '◐ {0}/{1} 个工具 · 进行中',
 }
 
 export type StringKey = keyof typeof EN

@@ -299,11 +299,39 @@ export function renderBlocks(blocks: Block[], ctx: RenderContext): RLine[] {
     if (previous.kind === 'tool' && current.kind === 'tool') return
     const soft = (kind: string): boolean => kind === 'thinking' || kind === 'system' || kind === 'error'
     if (soft(previous.kind) && soft(current.kind)) return
+    // A new prompt starts a new turn: separate turns with a rule, matching the
+    // section dividers DSH draws between conversation blocks.
+    if (current.kind === 'user') {
+      out.push({ spans: [{ text: '─'.repeat(Math.max(8, ctx.width)), fg: ctx.palette.sep }] })
+      return
+    }
     out.push({ spans: [{ text: '' }] })
   }
 
-  for (const block of blocks) {
+  /** Length of the tool run starting at `start`. */
+  const runLength = (start: number): number => {
+    let length = 0
+    while (blocks[start + length]?.kind === 'tool') length += 1
+    return length
+  }
+
+  for (let index = 0; index < blocks.length; index += 1) {
+    const block = blocks[index]!
     separator(block)
+    // Summarise a long tool run once, the way DSH folds a batch of steps into one
+    // collapsible section. Short runs stay bare to avoid noise.
+    if (block.kind === 'tool' && blocks[index - 1]?.kind !== 'tool') {
+      const length = runLength(index)
+      if (length >= 3) {
+        const run = blocks.slice(index, index + length) as ToolBlock[]
+        const running = run.filter(tool => tool.status === 'running').length
+        const total = run.reduce((sum, tool) => sum + ((tool.endedAt ?? Date.now()) - tool.startedAt), 0)
+        const text = running > 0
+          ? t('toolGroupRunning', length - running, length)
+          : t('toolGroupDone', length, formatDuration(total))
+        out.push({ spans: [{ text, fg: ctx.palette.dim, dim: true }] })
+      }
+    }
     switch (block.kind) {
       case 'user': {
         // Right-aligned bubble: content-hugging width, capped so long prompts keep a margin.
@@ -340,13 +368,13 @@ export function renderBlocks(blocks: Block[], ctx: RenderContext): RLine[] {
           const lineCount = block.text.split('\n').filter(line => line.trim() !== '').length
           out.push({
             spans: [
-              { text: t('thinkingLabel'), fg: ctx.palette.dim, dim: true },
+              { text: `▸ ${t('thinkingLabel')}`, fg: ctx.palette.dim, dim: true },
               { text: `${meta}${lineCount === 1 ? t('thinkingMetaOne') : t('thinkingMetaMany', lineCount)}`, fg: ctx.palette.dim, dim: true },
             ],
           })
           break
         }
-        out.push({ spans: [{ text: `${t('thinkingLabel')}${meta}`, fg: ctx.palette.accent, dim: true }] })
+        out.push({ spans: [{ text: `▾ ${t('thinkingLabel')}${meta}`, fg: ctx.palette.accent, dim: true }] })
         for (const line of block.text.split('\n')) {
           out.push({ spans: [{ text: `  ${line}`, fg: ctx.palette.dim, dim: true }] })
         }

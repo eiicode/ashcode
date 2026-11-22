@@ -4,6 +4,18 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.7.0 — 2026-11-23
+
+Closer to the DSH Web UI's grouping: collapsible markers, turn dividers, and a
+summary for long tool runs.
+
+### Added
+
+- The thinking line carries a chevron: `▸` when collapsed, `▾` when expanded
+- A dim rule separates turns, so every prompt starts a new section
+- A run of three or more consecutive tool calls gets one summary line above the
+  cards: `▸ 3 tools · 1s`, or `◐ 2/3 tools · running` while the batch is still going
+
 ## 1.6.0 — 2026-11-22
 
 ### Added
