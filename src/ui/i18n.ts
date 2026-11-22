@@ -56,6 +56,9 @@ const EN = {
   thinkingLabel: '✦ thinking',
   thinkingMetaOne: ' · 1 line · Ctrl+T',
   thinkingMetaMany: ' · {0} lines · Ctrl+T',
+
+  toolActive: '✳ Calling tool · {0}',
+  toolMore: ' (+{0})',
 } as const
 
 const ZH: Record<keyof typeof EN, string> = {
@@ -110,6 +113,9 @@ const ZH: Record<keyof typeof EN, string> = {
   thinkingLabel: '✦ 思考',
   thinkingMetaOne: ' · 1 行 · Ctrl+T',
   thinkingMetaMany: ' · {0} 行 · Ctrl+T',
+
+  toolActive: '✳ 正在调用工具 · {0}',
+  toolMore: '（另 {0} 个）',
 }
 
 export type StringKey = keyof typeof EN

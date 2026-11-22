@@ -14,7 +14,7 @@ import { makePalette } from './theme.ts'
 import { t, describeLang, getLang, resolveLang, setLang, type Lang } from './i18n.ts'
 import { textWidth, type Span } from './markdown.ts'
 import {
-  planFromTool, renderBlocks, renderModal,
+  formatDuration, planFromTool, renderBlocks, renderModal, shortSummary, verbOf,
   type Block, type ModalSpec, type RenderContext, type RLine, type ToolBlock,
 } from './render.ts'
 
@@ -108,6 +108,8 @@ const state = {
   showThinking: false,
   /** Latest todo_write snapshot (whole-list replacement, as the tool defines it). */
   todos: [] as Array<{ content: string; status: string }>,
+  /** Tools currently executing, keyed by call id — drives the "calling tool" row. */
+  runningTools: new Map<string, { verb: string; summary: string; startedAt: number }>(),
   /** Coarse turn phase, shown next to the header spinner. */
   phase: '' as '' | 'analyzing' | 'thinking' | 'tool' | 'responding',
   usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -257,6 +259,17 @@ function usageSummary(): string {
     parts.push(`$${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(3)}`)
   }
   return parts.join(' ')
+}
+
+/** Dedicated "calling tool" row, mirroring DSH's phase line above the composer. */
+function toolStatusLine(width: number): RLine | undefined {
+  if (state.runningTools.size === 0) return undefined
+  const entries = [...state.runningTools.values()]
+  const current = entries[entries.length - 1]!
+  const more = entries.length > 1 ? t('toolMore', entries.length - 1) : ''
+  const elapsed = formatDuration(Date.now() - current.startedAt)
+  const text = `${t('toolActive', `${current.verb}: ${current.summary}`)}${more} · ${elapsed}`
+  return { spans: [{ text: clipDisplay(text, width), fg: palette.accent }] }
 }
 
 /** One-line todo summary, mirroring DSH's task panel: done/total plus the active item. */
@@ -949,7 +962,8 @@ function redraw(): void {
     })
   }
 
-  const fixed = 5 + composerRows.length + completionRows.length + modalLines.length + (state.todos.length > 0 ? 1 : 0)
+  const fixed = 5 + composerRows.length + completionRows.length + modalLines.length
+    + (state.todos.length > 0 ? 1 : 0) + (state.runningTools.size > 0 ? 1 : 0)
   const page = Math.max(4, renderer.height - fixed)
   const maxScroll = Math.max(0, lines.length - page)
   state.scroll = Math.min(Math.max(0, state.scroll), maxScroll)
@@ -986,6 +1000,8 @@ function redraw(): void {
     push({ spans: [{ text: padTo(banner, frameWidth), fg: palette.bg, bg: palette.warn, bold: true }] })
   }
   push({ spans: [{ text: '' }] })
+  const toolStatus = toolStatusLine(frameWidth)
+  if (toolStatus !== undefined) push(toolStatus)
   if (state.todos.length > 0) push(todoLine(frameWidth))
   push(status)
   for (const line of composerRows) push(line)
@@ -1030,6 +1046,7 @@ function project(event: SessionEvent): void {
       state.startedAt = 0
       state.note = 'idle'
       state.phase = ''
+      state.runningTools.clear()
       closeThinking()
       break
     case 'step/start':
@@ -1114,10 +1131,12 @@ function project(event: SessionEvent): void {
       const plan = planFromTool(tool)
       if (plan !== undefined) pushBlock(plan)
       else pushBlock(tool)
+      state.runningTools.set(tool.id, { verb: verbOf(tool.name), summary: shortSummary(tool), startedAt: tool.startedAt })
       break
     }
     case 'tool/result': {
       const callId = String(data.message?.toolCallId ?? '')
+      state.runningTools.delete(callId)
       const tool = [...blocks].reverse().find((block): block is ToolBlock => block.kind === 'tool' && block.id === callId)
       if (tool !== undefined) {
         const parts = (data.message?.content ?? []) as Array<{ type: string; text?: string }>

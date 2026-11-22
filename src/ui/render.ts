@@ -62,6 +62,15 @@ export interface ModalSpec {
   footer?: string
 }
 
+/** Human-readable duration: `45s`, `3m25s`. */
+export function formatDuration(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000))
+  if (total < 60) return `${total}s`
+  const minutes = Math.floor(total / 60)
+  const seconds = total % 60
+  return `${minutes}m${String(seconds).padStart(2, '0')}s`
+}
+
 const VERBS: Record<string, string> = {
   read: 'Read',
   write: 'Write',
@@ -86,7 +95,7 @@ export function verbOf(name: string): string {
   return VERBS[name] ?? name
 }
 
-function shortSummary(tool: ToolBlock, max = 64): string {
+export function shortSummary(tool: ToolBlock, max = 64): string {
   const raw = tool.args.file_path ?? tool.args.path ?? tool.args.command ?? tool.args.pattern
     ?? tool.args.url ?? tool.args.query ?? tool.args.description ?? tool.args.name
   if (typeof raw !== 'string') return ''
@@ -326,7 +335,7 @@ export function renderBlocks(blocks: Block[], ctx: RenderContext): RLine[] {
       case 'thinking': {
         const started = block.startedAt ?? Date.now()
         const elapsed = ((block.endedAt ?? Date.now()) - started) / 1000
-        const meta = elapsed >= 1 ? ` · ${elapsed.toFixed(0)}s` : ''
+        const meta = elapsed >= 1 ? ` · ${formatDuration(elapsed * 1000)}` : ''
         if (!ctx.showThinking) {
           const lineCount = block.text.split('\n').filter(line => line.trim() !== '').length
           out.push({

@@ -4,6 +4,18 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.6.0 — 2026-11-22
+
+### Added
+
+- A dedicated row above the composer while a tool runs:
+  `✳ Calling tool · Shell: git log -1 --stat · 0.8s`, with `(+N)` when several run at
+  once. It only takes a line while work is in flight
+
+### Changed
+
+- Durations read `45s` / `3m25s` instead of raw seconds, in the thinking block too
+
 ## 1.5.3 — 2026-11-22
 
 ### Fixed
