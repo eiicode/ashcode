@@ -263,12 +263,12 @@ function statusLine(width: number): RLine {
   let groups = [
     `会话[${rawName === '' ? '(untitled)' : clipDisplay(rawName, 12)}]`,
     `权限[${presetLabel(state.preset)}]`,
+    ...(APP_VERSION === '' ? [] : [`版本[${APP_VERSION}]`]),
     ...(contextPct > 0 ? [`上下文[${contextPct}%]`] : []),
     `回合[${state.turns}]`,
     `步骤[${state.steps}]`,
     `工具[${state.tools}次]`,
     ...(tokensPerSec >= 1 ? [`速度[${Math.round(tokensPerSec)}t/s]`] : []),
-    ...(APP_VERSION === '' ? [] : [`版本[${APP_VERSION}]`]),
   ]
   const fits = (text: string): boolean => textWidth(left) + 1 + textWidth(text) <= width
   let right = groups.join(' · ')

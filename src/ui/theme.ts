@@ -58,7 +58,7 @@ export function makePalette(mode: string | undefined): Palette {
         ok: hex('#98c379'), warn: hex('#e5c07b'), err: hex('#e06c75'), sys: hex('#56b6c2'),
         sep: hex('#3b4048'), diffAdd: hex('#98c379'), diffDel: hex('#e06c75'),
         diffAddBg: hex('#1d2a1d'), diffDelBg: hex('#2f1d1f'), codeBg: hex('#20252b'),
-        userBg: hex('#1f2d3d'),
+        userBg: hex('#2a3c55'),
       }
   }
 }
