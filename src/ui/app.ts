@@ -594,7 +594,7 @@ function completionItems(): string[] {
   }
   if (text.startsWith('/') && !text.includes(' ')) {
     const commands = ['/help', '/new', '/sessions', '/resume ', '/model ', '/effort ', '/language ', '/plan', '/key', '/team ', '/plan off']
-    return commands.filter(command => command.startsWith(text)).slice(0, 8)
+    return commands.filter(command => command.startsWith(text))
   }
   return []
 }
@@ -922,13 +922,23 @@ function redraw(): void {
         : chooser !== undefined ? chooserModal() : undefined
   const modalLines = modal === undefined ? [] : renderModal(modal, frameWidth, palette)
   const completion = state.pending === undefined ? completionItems() : []
-  const completionRows = completion.map((item, index): RLine => ({
-    spans: [{
-      text: `${' '.repeat(PAD)}${index === Math.min(completionIndex, completion.length - 1) ? '>' : ' '} ${item}`,
-      fg: palette.accent,
-      bold: index === Math.min(completionIndex, completion.length - 1),
-    }],
-  }))
+  // Two columns once the list outgrows one screen, so every command stays visible
+  // instead of being cut off by a fixed cap (which kept hiding newer commands).
+  const perRow = completion.length > 6 ? 2 : 1
+  const columnWidth = Math.max(12, Math.floor((frameWidth - PAD) / perRow))
+  const activeIndex = Math.min(completionIndex, completion.length - 1)
+  const completionRows: RLine[] = []
+  for (let index = 0; index < completion.length; index += perRow) {
+    const spans: Span[] = [{ text: ' '.repeat(PAD) }]
+    for (let column = 0; column < perRow; column += 1) {
+      const item = completion[index + column]
+      if (item === undefined) continue
+      const selected = index + column === activeIndex
+      const cell = `${selected ? '>' : ' '} ${item}`
+      spans.push({ text: padTo(cell, columnWidth), fg: palette.accent, bold: selected })
+    }
+    completionRows.push({ spans })
+  }
 
   const fixed = 5 + composerRows.length + completionRows.length + modalLines.length + (state.todos.length > 0 ? 1 : 0)
   const page = Math.max(4, renderer.height - fixed)

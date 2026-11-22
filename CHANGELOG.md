@@ -4,6 +4,14 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.5.2 — 2026-11-22
+
+### Fixed
+
+- `/key` was still missing from the slash-command completion: a fixed eight-entry
+  cap kept hiding whatever came after it. The list now renders every match, in two
+  columns once it exceeds six entries
+
 ## 1.5.1 — 2026-11-22
 
 ### Fixed
