@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安装与使用说明
+    url: https://github.com/eiicode/ashcode/blob/master/docs/USER-GUIDE.md
+    about: 安装、配置、命令、快捷键与环境变量
+  - name: 上游 DeepSeek Harness 仓库
+    url: https://github.com/deepseek-ai/deepseek-harness
+    about: dsh 自身的问题（模型、工具、沙箱、插件）请报到上游

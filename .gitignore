@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.dsh-home/
+.install-test/
+spike-workspace/
+.env.local
+.tui-debug.log
+.keys.log
+.stdin-probe.log
+.spike-keys.mjs
+hello.txt
+*.log
+.DS_Store
+*.bin

@@ -1,0 +1,58 @@
+{
+  "name": "ashcode",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Terminal UI client for DeepSeek Harness: two-process isolation, crash recovery, cost tracking (Windows-first)",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eiicode/ashcode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/eiicode/ashcode/issues"
+  },
+  "homepage": "https://github.com/eiicode/ashcode#readme",
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "tui",
+    "cli",
+    "terminal"
+  ],
+  "bin": {
+    "ashcode": "./bin/ashcode.mjs"
+  },
+  "engines": {
+    "node": ">=24.9.0"
+  },
+  "scripts": {
+    "tui": "bun src/ui/app.ts",
+    "install:local": "powershell -ExecutionPolicy Bypass -File scripts/install.ps1",
+    "build": "bun build --compile src/ui/app.ts --outfile dist/ashcode",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/run-smokes.mjs",
+    "smoke:tui": "node scripts/tui-smoke.mjs",
+    "smoke:approval": "node scripts/approval-smoke.mjs",
+    "smoke:question": "node scripts/question-smoke.mjs",
+    "smoke:toolcard": "node scripts/toolcard-smoke.mjs",
+    "smoke:resume": "node scripts/resume-smoke.mjs",
+    "smoke:paste": "node scripts/paste-smoke.mjs",
+    "smoke:scroll": "node scripts/scroll-smoke.mjs",
+    "smoke:resume-history": "node scripts/resume-history-smoke.mjs",
+    "smoke:crash": "node scripts/crash-smoke.mjs",
+    "turn": "node scripts/sdk-turn.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis-plugin-group": "1.1.0",
+    "@deepseek-ai/dsh": "0.2.2-rc.5",
+    "@opentui/core": "^0.9.7",
+    "@opentui/solid": "^0.9.7",
+    "solid-js": "^1.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

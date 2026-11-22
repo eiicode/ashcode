@@ -1,0 +1,30 @@
+name: 功能建议
+description: 提出一个改进或新功能
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到的问题
+      description: 现在的行为哪里不够用？
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议的做法
+      description: 如果有替代方案，也一并说明
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 你考虑过的替代方案 / 现有绕法
+
+  - type: markdown
+    attributes:
+      value: |
+        提示：ashcode 只做「终端显示与输入」，会话、工具、审批、模型都在 DSH 运行时里。
+        如果建议涉及工具能力或沙箱策略，可能更适合作为 `dsh` 插件实现。

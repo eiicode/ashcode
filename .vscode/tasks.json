@@ -1,0 +1,61 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ashcode: Run here",
+      "detail": "Open ashcode in the integrated terminal with this workspace as the agent's cwd",
+      "type": "process",
+      "command": "cmd.exe",
+      "args": ["/d", "/k", "${env:LOCALAPPDATA}\\ashcode\\bin\\ashcode.cmd"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true,
+        "echo": false,
+        "showReuseMessage": false,
+        "close": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ashcode: Resume session",
+      "detail": "Resume a persisted session by id (see /sessions inside the TUI)",
+      "type": "shell",
+      "command": "cmd.exe",
+      "args": ["/c", "${env:LOCALAPPDATA}\\ashcode\\bin\\ashcode.cmd", "--resume", "${input:sessionId}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ashcode: Share desktop home",
+      "detail": "Run with ~/.dsh so desktop sessions and credentials are visible",
+      "type": "shell",
+      "command": "cmd.exe",
+      "args": ["/c", "${env:LOCALAPPDATA}\\ashcode\\bin\\ashcode.cmd", "--home", "${env:USERPROFILE}\\.dsh"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "sessionId",
+      "type": "promptString",
+      "description": "Session id (run /sessions inside ashcode to list them)"
+    }
+  ]
+}
