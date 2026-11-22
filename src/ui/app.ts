@@ -127,6 +127,12 @@ const renderer = await createCliRenderer({
 const view = new TextRenderable(renderer, { content: '', fg: palette.fg, bg: palette.bg, selectable: true })
 renderer.root.add(view)
 
+// Without this the transcript keeps the layout it was drawn with, so narrowing
+// the terminal simply clips the header and status lines until the next event.
+renderer.on('resize', () => {
+  scheduleRedraw()
+})
+
 const contentWidth = (): number => {
   const sidebarWidth = state.sidebar ? 25 : 0
   return Math.max(24, Math.min(100, renderer.width - PAD * 2 - sidebarWidth))

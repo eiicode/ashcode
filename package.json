@@ -1,6 +1,6 @@
 {
   "name": "ashcode",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "description": "Terminal UI client for DeepSeek Harness: two-process isolation, crash recovery, cost tracking (Windows-first)",
   "type": "module",

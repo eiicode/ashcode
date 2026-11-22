@@ -31,7 +31,7 @@ foreach ($item in $include) {
 # Never ship local state or secrets.
 $junk = @(
   '.env.local', 'node_modules', '.dsh-home', 'dist', '.install-test', '.git',
-  'docs\OPEN-SOURCE-ASSESSMENT.md', 'docs\EXTENSIONS-ASSESSMENT.md'
+  'docs\OPEN-SOURCE-ASSESSMENT.md', 'docs\EXTENSIONS-ASSESSMENT.md', 'docs\MIMOCODE-COMPARISON.md'
 )
 foreach ($item in $junk) {
   $target = Join-Path $stage $item
