@@ -22,6 +22,14 @@
 
 ## 安装
 
+最快的方式是一行命令，自动下载并安装最新版本：
+
+```powershell
+irm https://github.com/eiicode/ashcode/releases/latest/download/install.ps1 | iex
+```
+
+或者从下载好的发布包安装：
+
 ```powershell
 # 解压发布包后
 .\install.cmd

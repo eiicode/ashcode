@@ -22,6 +22,14 @@ A terminal client for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek
 
 ## Install
 
+Fastest path — one line, downloads and installs the latest release:
+
+```powershell
+irm https://github.com/eiicode/ashcode/releases/latest/download/install.ps1 | iex
+```
+
+Or from a downloaded package:
+
 ```powershell
 # after extracting the release package
 .\install.cmd

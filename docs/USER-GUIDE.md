@@ -43,23 +43,31 @@ install.cmd
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\pack.ps1
-powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -Source dist\ashcode-1.0.0-win-x64.zip
+powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -Source dist\ashcode-<version>-win-x64.zip
 ```
 
-### 方式 C：从 URL 安装（直接取 GitHub Release 附件）
+### 方式 C：一行安装（推荐）
+
+总是取最新版本，自动下载并安装：
+
+```powershell
+irm https://github.com/eiicode/ashcode/releases/latest/download/install.ps1 | iex
+```
+
+也可以先下 zip 再安装（适合需要固定版本的场景）：
 
 ```powershell
 $zip = "$env:TEMP\ashcode.zip"
-irm https://github.com/eiicode/ashcode/releases/download/v1.0.0/ashcode-1.0.0-win-x64.zip -OutFile $zip
+irm https://github.com/eiicode/ashcode/releases/latest/download/ashcode-latest-win-x64.zip -OutFile $zip
 powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -Source $zip
 ```
 
-> 也可以把 zip 与 `install.ps1` 托管到任意静态服务后，换掉上面的 URL。
+> `install.ps1` 不带 `-Source` 且不在仓库内运行时，会自动回退到最新 Release，所以这一行对任何静态托管的副本同样有效。
 
 ### 安装器做了什么
 
 1. 校验 Node ≥ 24.9；缺 Bun 时自动安装
-2. 把应用复制到 `%LOCALAPPDATA%\ashcode\app`
+2. 把应用复制到 `%LOCALAPPDATA%\ashcode\apps\app-<version>`
 3. `npm install` 并在必要时补跑被 npm 11 拦截的依赖安装脚本
 4. 生成 `%LOCALAPPDATA%\ashcode\bin\ashcode.cmd`（使用 bun.exe 绝对路径）
 5. 把 `bin` 目录加入**用户 PATH**
