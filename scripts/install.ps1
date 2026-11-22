@@ -49,19 +49,25 @@ if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
 }
 
 $tempZip = $null
-if ([string]::IsNullOrWhiteSpace($Source)) {
-  if ($null -eq $localRoot) {
-    throw 'No source: pass -Source <zip path or URL>, or run this script from the repository.'
-  }
+# Piped install (`irm .../install.ps1 | iex`) has no $PSScriptRoot, so fall back
+# to the package published with the latest release.
+$latestZipUrl = 'https://github.com/eiicode/ashcode/releases/latest/download/ashcode-latest-win-x64.zip'
+if ([string]::IsNullOrWhiteSpace($Source) -and $null -ne $localRoot) {
   Write-Host "  source: $localRoot (checkout)"
-} elseif (Test-Path $Source) {
-  $item = Get-Item $Source
-  if ($item.PSIsContainer) { $localRoot = $item.FullName; Write-Host "  source: $($item.FullName)" }
-  else { $tempZip = $item.FullName; Write-Host "  source: zip $($item.FullName)" }
 } else {
-  $tempZip = Join-Path ([System.IO.Path]::GetTempPath()) "ashcode-$([guid]::NewGuid().ToString('N')).zip"
-  Write-Host "  source: $Source (downloading...)"
-  Invoke-WebRequest -Uri $Source -OutFile $tempZip -UseBasicParsing
+  if ([string]::IsNullOrWhiteSpace($Source)) {
+    $Source = $latestZipUrl
+    Write-Host "  source: latest release"
+  }
+  if (Test-Path $Source) {
+    $item = Get-Item $Source
+    if ($item.PSIsContainer) { $localRoot = $item.FullName; Write-Host "  source: $($item.FullName)" }
+    else { $tempZip = $item.FullName; Write-Host "  source: zip $($item.FullName)" }
+  } else {
+    $tempZip = Join-Path ([System.IO.Path]::GetTempPath()) "ashcode-$([guid]::NewGuid().ToString('N')).zip"
+    Write-Host "  source: $Source (downloading...)"
+    Invoke-WebRequest -Uri $Source -OutFile $tempZip -UseBasicParsing
+  }
 }
 
 # ---------------------------------------------------------------- copy
@@ -265,4 +271,6 @@ foreach ($old in Get-ChildItem $appsRoot -Directory) {
   if ($null -eq $inUse) { Remove-WithRetry $old.FullName }
 }
 if (Test-Path (Join-Path $InstallDir 'app')) { Remove-WithRetry (Join-Path $InstallDir 'app') }
-exit 0
+# `return` rather than `exit`: this script is also run through `irm | iex`, where
+# `exit` would close the caller's PowerShell session.
+return

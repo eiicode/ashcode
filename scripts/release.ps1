@@ -108,16 +108,26 @@ try {
 # and a duplicate upload is rejected by the API.
 $release = Invoke-RestMethod -Uri "$api/releases/tags/$Tag" -Headers $headers -Method Get -TimeoutSec 60
 
-$leaf = Split-Path $Zip -Leaf
-$existing = @($release.assets | Where-Object { $_.name -eq $leaf })
-if ($existing.Count -gt 0) {
-  Write-Host "asset already attached: $($existing[0].browser_download_url)"
-} else {
+# Three assets per release: the versioned zip, a stable-name alias the one-line
+# installer can point at, and the installer itself.
+$installScript = Join-Path $root 'scripts\install.ps1'
+$uploads = @(
+  @{ Path = $Zip; Name = (Split-Path $Zip -Leaf); Type = 'application/zip' },
+  @{ Path = $Zip; Name = 'ashcode-latest-win-x64.zip'; Type = 'application/zip' },
+  @{ Path = $installScript; Name = 'install.ps1'; Type = 'text/plain' }
+)
+foreach ($item in $uploads) {
+  if (-not (Test-Path $item.Path)) { Write-Host "skip (missing): $($item.Path)"; continue }
+  $attached = @($release.assets | Where-Object { $_.name -eq $item.Name })
+  if ($attached.Count -gt 0) {
+    Write-Host "asset already attached: $($item.Name)"
+    continue
+  }
   $asset = Invoke-RestMethod -Method Post `
-    -Uri "https://uploads.github.com/repos/$Repo/releases/$($release.id)/assets?name=$leaf" `
-    -Headers $headers -ContentType 'application/zip' -InFile $Zip -TimeoutSec 300
+    -Uri "https://uploads.github.com/repos/$Repo/releases/$($release.id)/assets?name=$($item.Name)" `
+    -Headers $headers -ContentType $item.Type -InFile $item.Path -TimeoutSec 300
   if ($null -eq $asset.browser_download_url) { throw "upload failed: $($asset | ConvertTo-Json -Depth 3)" }
-  Write-Host "uploaded: $($asset.browser_download_url)"
+  Write-Host "uploaded: $($item.Name)"
 }
 
 Write-Host "release page: $($release.html_url)"

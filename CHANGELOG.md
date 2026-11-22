@@ -2,6 +2,18 @@
 
 本项目从 0.1.0 起记录。版本号与 `package.json` 保持一致；发布包命名 `ashcode-<version>-win-x64.zip`。
 
+## 1.3.0 — 2026-11-22
+
+### Added
+
+- 单行安装：`irm https://github.com/eiicode/ashcode/releases/latest/download/install.ps1 | iex`
+- Release 现在同时发布 `install.ps1` 与固定名 `ashcode-latest-win-x64.zip`，供上面的命令引用
+
+### Changed
+
+- `install.ps1` 在既没有 `-Source`、又不在仓库内运行时，改为默认下载最新 Release，不再直接报错
+- `install.ps1` 结尾由 `exit 0` 改为 `return`：经 `irm | iex` 执行时不再关闭用户当前的 PowerShell 会话
+
 ## 1.2.0 — 2026-11-22
 
 输入区向 DSH Web UI 对齐。
