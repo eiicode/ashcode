@@ -90,6 +90,8 @@ const state = {
   turns: 0,
   steps: 0,
   lastTurnMs: 0,
+  turnOutputStart: 0,
+  lastTurnOutput: 0,
   contextWindow: 0,
   lastUsageTokens: 0,
   sidebar: false,
@@ -248,12 +250,24 @@ function statusLine(width: number): RLine {
     return preset
   }
   const rawName = sessionTitles[state.sessionId] ?? state.title
+  const contextPct = state.contextWindow > 0
+    ? Math.min(999, Math.round((state.lastUsageTokens / state.contextWindow) * 100))
+    : 0
+  let tokensPerSec = 0
+  if (state.busy && state.startedAt > 0) {
+    const elapsed = (Date.now() - state.startedAt) / 1000
+    if (elapsed >= 1) tokensPerSec = Math.max(0, state.usage.output - state.turnOutputStart) / elapsed
+  } else if (state.lastTurnMs > 0) {
+    tokensPerSec = state.lastTurnOutput / (state.lastTurnMs / 1000)
+  }
   let groups = [
     `会话[${rawName === '' ? '(untitled)' : clipDisplay(rawName, 12)}]`,
     `权限[${presetLabel(state.preset)}]`,
+    ...(contextPct > 0 ? [`上下文[${contextPct}%]`] : []),
     `回合[${state.turns}]`,
     `步骤[${state.steps}]`,
     `工具[${state.tools}次]`,
+    ...(tokensPerSec >= 1 ? [`速度[${Math.round(tokensPerSec)}t/s]`] : []),
     ...(APP_VERSION === '' ? [] : [`版本[${APP_VERSION}]`]),
   ]
   const fits = (text: string): boolean => textWidth(left) + 1 + textWidth(text) <= width
@@ -884,12 +898,14 @@ function project(event: SessionEvent): void {
     case 'turn/start':
       state.busy = true
       state.turns += 1
+      state.turnOutputStart = state.usage.output
       state.startedAt = state.startedAt || Date.now()
       state.note = 'working…'
       break
     case 'turn/end':
       state.busy = false
       state.lastTurnMs = state.startedAt > 0 ? Date.now() - state.startedAt : 0
+      state.lastTurnOutput = Math.max(0, state.usage.output - state.turnOutputStart)
       state.startedAt = 0
       state.note = 'idle'
       break

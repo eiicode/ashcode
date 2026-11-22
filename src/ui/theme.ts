@@ -16,6 +16,8 @@ export interface Palette {
   diffAddBg: RGBA
   diffDelBg: RGBA
   codeBg: RGBA
+  /** Background of the right-aligned user message bubble. */
+  userBg: RGBA
 }
 
 function hex(value: string): RGBA {
@@ -31,6 +33,7 @@ export function makePalette(mode: string | undefined): Palette {
         ok: hex('#1a7f37'), warn: hex('#9a6700'), err: hex('#cf222e'), sys: hex('#1b7c83'),
         sep: hex('#d0d7de'), diffAdd: hex('#116329'), diffDel: hex('#a40e26'),
         diffAddBg: hex('#dafbe1'), diffDelBg: hex('#ffebe9'), codeBg: hex('#eff1f3'),
+        userBg: hex('#eef3fb'),
       }
     case 'contrast':
       return {
@@ -38,6 +41,7 @@ export function makePalette(mode: string | undefined): Palette {
         ok: hex('#00ff00'), warn: hex('#ffff00'), err: hex('#ff5555'), sys: hex('#00ffff'),
         sep: hex('#555555'), diffAdd: hex('#00ff00'), diffDel: hex('#ff5555'),
         diffAddBg: hex('#003300'), diffDelBg: hex('#330000'), codeBg: hex('#111111'),
+        userBg: hex('#003a5c'),
       }
     case 'ansi':
       return {
@@ -46,6 +50,7 @@ export function makePalette(mode: string | undefined): Palette {
         err: RGBA.fromIndex(9), sys: RGBA.fromIndex(14), sep: RGBA.fromIndex(8),
         diffAdd: RGBA.fromIndex(10), diffDel: RGBA.fromIndex(9),
         diffAddBg: RGBA.fromIndex(0), diffDelBg: RGBA.fromIndex(0), codeBg: RGBA.fromIndex(0),
+        userBg: RGBA.fromIndex(4),
       }
     default:
       return {
@@ -53,6 +58,7 @@ export function makePalette(mode: string | undefined): Palette {
         ok: hex('#98c379'), warn: hex('#e5c07b'), err: hex('#e06c75'), sys: hex('#56b6c2'),
         sep: hex('#3b4048'), diffAdd: hex('#98c379'), diffDel: hex('#e06c75'),
         diffAddBg: hex('#1d2a1d'), diffDelBg: hex('#2f1d1f'), codeBg: hex('#20252b'),
+        userBg: hex('#1f2d3d'),
       }
   }
 }

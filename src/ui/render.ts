@@ -286,12 +286,30 @@ export function renderBlocks(blocks: Block[], ctx: RenderContext): RLine[] {
   for (const block of blocks) {
     separator(block)
     switch (block.kind) {
-      case 'user':
-        out.push(...wrapSpans([
-          { text: '❯ ', fg: ctx.palette.accent, bold: true },
-          { text: block.text, fg: ctx.palette.fg },
-        ], ctx.width))
+      case 'user': {
+        // Right-aligned bubble: content-hugging width, capped so long prompts keep a margin.
+        const bg = ctx.palette.userBg
+        const limit = Math.min(76, Math.max(24, Math.floor(ctx.width * 0.75)))
+        const lines = wrapSpans([{ text: block.text, fg: ctx.palette.fg, bg }], limit)
+        const widest = lines.reduce(
+          (max, line) => Math.max(max, line.spans.reduce((sum, span) => sum + textWidth(span.text), 0)),
+          0,
+        )
+        const bubbleWidth = Math.min(limit, Math.max(8, widest))
+        const leftPad = Math.max(0, ctx.width - bubbleWidth)
+        for (const line of lines) {
+          const used = line.spans.reduce((sum, span) => sum + textWidth(span.text), 0)
+          const pad = Math.max(0, bubbleWidth - used)
+          out.push({
+            spans: [
+              ...(leftPad > 0 ? [{ text: ' '.repeat(leftPad) }] : []),
+              ...(pad > 0 ? [{ text: ' '.repeat(pad), bg }] : []),
+              ...line.spans.map(span => ({ ...span, bg })),
+            ],
+          })
+        }
         break
+      }
       case 'assistant':
         out.push(...renderMarkdown(block.text, ctx.width, md))
         break
