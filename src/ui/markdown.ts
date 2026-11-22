@@ -84,10 +84,29 @@ export function wrapSpans(spans: Span[], width: number, indent = 0): MLine[] {
   return out
 }
 
+/** Split text into display-width chunks (for code lines that overflow). */
+export function chunkByWidth(text: string, max: number): string[] {
+  const out: string[] = []
+  let current = ''
+  let used = 0
+  for (const char of text) {
+    const size = charWidth(char)
+    if (used + size > max && current !== '') {
+      out.push(current)
+      current = ''
+      used = 0
+    }
+    current += char
+    used += size
+  }
+  if (current !== '' || out.length === 0) out.push(current)
+  return out
+}
+
 /** Split one inline string into styled spans for **bold**, `code`, links, and paths. */
 function inline(text: string, base: MdStyles, bold = false, code = false): Span[] {
   const spans: Span[] = []
-  const pattern = new RegExp(`(\\*\\*[^*]+\\*\\*|\`[^\`]+\`|\\[[^\\]]+\\]\\([^)]+\\)|${PATH_PATTERN})`, 'g')
+  const pattern = new RegExp(`(\\*\\*[^*]+\\*\\*|~~[^~]+~~|\\*[^*\\n]+\\*|\`[^\`]+\`|\\[[^\\]]+\\]\\([^)]+\\)|${PATH_PATTERN})`, 'g')
   let last = 0
   for (const match of text.matchAll(pattern)) {
     const index = match.index ?? 0
@@ -95,6 +114,10 @@ function inline(text: string, base: MdStyles, bold = false, code = false): Span[
     const token = match[0]
     if (token.startsWith('**')) {
       spans.push({ text: token.slice(2, -2), fg: base.base, bold: true })
+    } else if (token.startsWith('~~')) {
+      spans.push({ text: token.slice(2, -2), fg: base.dim, bold, dim: true })
+    } else if (token.startsWith('*')) {
+      spans.push({ text: token.slice(1, -1), fg: base.base, bold, italic: true })
     } else if (token.startsWith('`')) {
       spans.push({ text: token.slice(1, -1), fg: base.code, bg: base.codeBg, bold })
     } else if (token.startsWith('[')) {
@@ -187,7 +210,9 @@ export function renderMarkdown(text: string, width: number, styles: MdStyles): M
         const label = fence.lang === '' ? 'code' : fence.lang
         out.push({ spans: [{ text: `┌ ${label}`, fg: styles.dim }] })
         for (const codeLine of fence.body) {
-          out.push({ spans: [{ text: '│ ', fg: styles.dim }, { text: codeLine, fg: styles.code, bg: styles.codeBg }] })
+          for (const chunk of chunkByWidth(codeLine, Math.max(8, width - 2))) {
+            out.push({ spans: [{ text: '│ ', fg: styles.dim }, { text: chunk, fg: styles.code, bg: styles.codeBg }] })
+          }
         }
         out.push({ spans: [{ text: '└', fg: styles.dim }] })
         fence = null
@@ -231,7 +256,16 @@ export function renderMarkdown(text: string, width: number, styles: MdStyles): M
 
     const heading = /^(#{1,6})\s+(.*)$/.exec(line)
     if (heading !== null) {
-      pushSpans([{ text: heading[2] ?? '', fg: styles.heading, bold: true }])
+      const level = (heading[1] ?? '#').length
+      const title = heading[2] ?? ''
+      if (level === 1) {
+        pushSpans([{ text: title, fg: styles.heading, bold: true }])
+        out.push({ spans: [{ text: '═'.repeat(Math.min(width, 60)), fg: styles.dim }] })
+      } else if (level === 2) {
+        pushSpans([{ text: title, fg: styles.heading, bold: true }])
+      } else {
+        pushSpans([{ text: title, fg: styles.base, bold: true }])
+      }
       continue
     }
 
@@ -249,19 +283,24 @@ export function renderMarkdown(text: string, width: number, styles: MdStyles): M
     const checkbox = /^(\s*)[-*]\s+\[( |x|X)\]\s+(.*)$/.exec(line)
     if (checkbox !== null) {
       const mark = checkbox[2] === ' ' ? '□' : '■'
-      pushSpans([{ text: `${mark} `, fg: checkbox[2] === ' ' ? styles.dim : styles.ok }, ...inline(checkbox[3] ?? '', styles)], 2)
+      const depth = Math.min(3, Math.floor((checkbox[1] ?? '').length / 2))
+      pushSpans([{ text: `${mark} `, fg: checkbox[2] === ' ' ? styles.dim : styles.ok }, ...inline(checkbox[3] ?? '', styles)], 2 + depth * 2)
       continue
     }
 
     const bullet = /^(\s*)(?:[-*]|--)\s+(.*)$/.exec(line)
     if (bullet !== null) {
-      pushSpans([{ text: '• ', fg: styles.accent }, ...inline(bullet[2] ?? '', styles)], 2)
+      // Nesting depth comes from the leading spaces, so sub-lists keep their shape.
+      const depth = Math.min(3, Math.floor((bullet[1] ?? '').length / 2))
+      const marker = depth >= 2 ? '◦' : '•'
+      pushSpans([{ text: `${marker} `, fg: styles.accent }, ...inline(bullet[2] ?? '', styles)], 2 + depth * 2)
       continue
     }
 
     const ordered = /^(\s*)(\d+)[.)]\s+(.*)$/.exec(line)
     if (ordered !== null) {
-      pushSpans([{ text: `${ordered[2]}. `, fg: styles.accent }, ...inline(ordered[3] ?? '', styles)], 3)
+      const depth = Math.min(3, Math.floor((ordered[1] ?? '').length / 2))
+      pushSpans([{ text: `${ordered[2]}. `, fg: styles.accent }, ...inline(ordered[3] ?? '', styles)], 2 + depth * 2)
       continue
     }
 
@@ -270,7 +309,9 @@ export function renderMarkdown(text: string, width: number, styles: MdStyles): M
 
   if (fence !== null) {
     for (const codeLine of fence.body) {
-      out.push({ spans: [{ text: '│ ', fg: styles.dim }, { text: codeLine, fg: styles.code, bg: styles.codeBg }] })
+      for (const chunk of chunkByWidth(codeLine, Math.max(8, width - 2))) {
+        out.push({ spans: [{ text: '│ ', fg: styles.dim }, { text: chunk, fg: styles.code, bg: styles.codeBg }] })
+      }
     }
   }
   return out

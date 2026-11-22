@@ -4,6 +4,20 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.7.1 — 2026-11-23
+
+### Fixed
+
+- Markdown: `*italic*` and `~~strikethrough~~` leaked their markers instead of
+  rendering
+- Markdown: nested list items all rendered at one level; indentation now follows the
+  leading spaces (and a `◦` marks the third level)
+- Markdown: nested ordered lists consumed the parent's numbering
+- Markdown: code lines wider than the terminal are now wrapped onto continuation
+  `│ ` rows instead of being clipped
+- Markdown: headings had one flat style; H1 now gets a `═` rule, H2 stays accented,
+  H3+ renders bold only
+
 ## 1.7.0 — 2026-11-23
 
 Closer to the DSH Web UI's grouping: collapsible markers, turn dividers, and a
