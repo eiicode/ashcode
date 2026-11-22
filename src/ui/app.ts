@@ -1478,7 +1478,9 @@ async function submit(): Promise<void> {
   if (!started) {
     pendingPrompt = text
     state.note = 'harness starting…'
-    pushBlock({ kind: 'user', text: `${text} (queued)` })
+    // The message is echoed once, by sendPrompt, when it is actually sent —
+    // echoing it here as well made it appear twice.
+    pushBlock({ kind: 'system', text: t('queuedNote') })
     return
   }
   await sendPrompt(text)

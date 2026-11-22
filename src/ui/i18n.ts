@@ -57,6 +57,8 @@ const EN = {
   thinkingMetaOne: ' · 1 line · Ctrl+T',
   thinkingMetaMany: ' · {0} lines · Ctrl+T',
 
+  queuedNote: 'message queued · waiting for the harness to start',
+
   toolActive: '✳ Calling tool · {0}',
   toolMore: ' (+{0})',
   toolGroupDone: '▸ {0} tools · {1}',
@@ -115,6 +117,8 @@ const ZH: Record<keyof typeof EN, string> = {
   thinkingLabel: '✦ 思考',
   thinkingMetaOne: ' · 1 行 · Ctrl+T',
   thinkingMetaMany: ' · {0} 行 · Ctrl+T',
+
+  queuedNote: '已排队 · 等待运行时启动',
 
   toolActive: '✳ 正在调用工具 · {0}',
   toolMore: '（另 {0} 个）',

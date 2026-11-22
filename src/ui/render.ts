@@ -1,6 +1,6 @@
 /** Block model and transcript renderers (tool cards, diffs, plans, modals). */
 import type { RGBA } from '@opentui/core'
-import { renderMarkdown, textWidth, wrapSpans, padDisplay, truncateDisplay, type MdStyles, type Span } from './markdown.ts'
+import { renderMarkdown, textWidth, wrapSpans, padDisplay, truncateDisplay, type MdStyles, type MLine, type Span } from './markdown.ts'
 import { t } from './i18n.ts'
 import type { Palette } from './theme.ts'
 
@@ -337,7 +337,17 @@ export function renderBlocks(blocks: Block[], ctx: RenderContext): RLine[] {
         // Right-aligned bubble: content-hugging width, capped so long prompts keep a margin.
         const bg = ctx.palette.userBg
         const limit = Math.min(76, Math.max(24, Math.floor(ctx.width * 0.75)))
-        const lines = wrapSpans([{ text: block.text, fg: ctx.palette.fg, bg }], limit)
+        // Hard line breaks are structural: wrap each line separately instead of
+        // letting wrapSpans treat '\n' as a one-cell glyph.
+        const segments = block.text.replace(/\n+$/, '').split('\n')
+        const lines: MLine[] = []
+        for (const segment of segments) {
+          if (segment.trim() === '') {
+            lines.push({ spans: [] })
+            continue
+          }
+          lines.push(...wrapSpans([{ text: segment, fg: ctx.palette.fg, bg }], limit))
+        }
         const widest = lines.reduce(
           (max, line) => Math.max(max, line.spans.reduce((sum, span) => sum + textWidth(span.text), 0)),
           0,

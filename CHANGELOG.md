@@ -4,6 +4,17 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.8.1 — 2026-11-23
+
+### Fixed
+
+- Multi-line prompts rendered as one garbled paragraph: the bubble wrapper treated
+  `\n` as a one-cell character instead of a line break. Each line now gets its own
+  row, right-aligned, with blank lines preserved
+- A prompt typed before the harness finished starting appeared twice — once as
+  `<text> (queued)` and again when it was sent. Now it is echoed once, and the wait
+  is announced with a separate status line
+
 ## 1.8.0 — 2026-11-23
 
 ### Added
