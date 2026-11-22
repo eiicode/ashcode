@@ -4,6 +4,16 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.8.0 — 2026-11-23
+
+### Added
+
+- A scrollbar on the right edge of the transcript, drawn only when the content
+  overflows: `┃` thumb over a `│` track. Click anywhere on it to jump, drag to
+  scrub; both map a row to a scroll offset proportionally
+- One column is permanently reserved for the bar, so text never re-wraps when the
+  content crosses the "scrollable" threshold
+
 ## 1.7.1 — 2026-11-23
 
 ### Fixed

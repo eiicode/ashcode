@@ -169,11 +169,17 @@ renderer.on('resize', () => {
 
 const contentWidth = (): number => {
   const sidebarWidth = state.sidebar ? 25 : 0
-  return Math.max(24, Math.min(100, renderer.width - PAD * 2 - sidebarWidth))
+  // One column is always reserved for the scrollbar so wrapping never jitters
+  // when content crosses the "scrollable" threshold.
+  return Math.max(24, Math.min(100, renderer.width - PAD * 2 - sidebarWidth - 1))
 }
-const layoutWidth = (): number => Math.max(40, Math.min(100, renderer.width - PAD * 2))
+const layoutWidth = (): number => Math.max(40, Math.min(100, renderer.width - PAD * 2 - 1))
 
 let sidebarItems: PickerItem[] = []
+
+/** Geometry of the scrollbar in the last frame, for mouse hit-testing. */
+let scrollBarHit: { column: number; top: number; height: number; maxScroll: number } | undefined
+let scrollDragging = false
 
 function toChunk(text: string, span: Partial<Span> = {}): TextChunk {
   return {
@@ -975,9 +981,29 @@ function redraw(): void {
 
   const chunks: TextChunk[] = []
   let pushedLines = 0
-  const push = (line: RLine): void => {
-    chunks.push(...lineChunks(line, PAD + frameWidth))
+  const push = (line: RLine, bar?: Span): void => {
+    const rowChunks = lineChunks(line, PAD + frameWidth)
+    // The bar sits one column past the padded content area.
+    if (bar !== undefined) rowChunks.splice(rowChunks.length - 1, 0, toChunk(bar.text, bar))
+    chunks.push(...rowChunks)
     pushedLines += 1
+  }
+  // Thumb geometry: proportional height, position mapped from scroll offset
+  // (which counts lines up from the bottom).
+  const barRows: Array<Span | undefined> = []
+  if (maxScroll > 0) {
+    const thumb = Math.max(1, Math.min(page, Math.round((page * page) / Math.max(1, lines.length))))
+    const maxPos = Math.max(0, page - thumb)
+    const pos = Math.round((state.scroll / Math.max(1, maxScroll)) * maxPos)
+    const topRow = page - thumb - pos
+    for (let row = 0; row < page; row += 1) {
+      barRows.push(row >= topRow && row < topRow + thumb
+        ? { text: '┃', fg: palette.accent }
+        : { text: '│', fg: palette.sep })
+    }
+    scrollBarHit = { column: PAD + frameWidth, top: 2, height: page, maxScroll }
+  } else {
+    scrollBarHit = undefined
   }
   push(header)
   push({ spans: [{ text: '─'.repeat(frameWidth), fg: palette.sep }] })
@@ -985,13 +1011,15 @@ function redraw(): void {
     for (let index = 0; index < page; index += 1) {
       const side = sidebarRow(index)
       const content = dimSpan(visible[index] ?? { spans: [] })
-      push({ spans: [...side.spans, { text: ' │ ', fg: palette.sep }, ...content.spans] })
+      push({ spans: [...side.spans, { text: ' │ ', fg: palette.sep }, ...content.spans] }, barRows[index])
     }
   } else {
-    for (const line of visible) push(dimSpan(line))
-    // Pad the transcript area so the status line and composer stay pinned to the
-    // bottom instead of sliding down while the first screenful fills up.
-    for (let index = visible.length; index < page; index += 1) push({ spans: [{ text: '' }] })
+    // One indexed loop covers both real rows and the filler that pins the
+    // status line and composer to the bottom.
+    for (let index = 0; index < page; index += 1) {
+      const content = visible[index]
+      push(content === undefined ? { spans: [{ text: '' }] } : dimSpan(content), barRows[index])
+    }
   }
   for (const line of modalLines) push(line)
   for (const line of completionRows) push(line)
@@ -1007,6 +1035,15 @@ function redraw(): void {
   for (const line of composerRows) push(line)
   composerBottomRow = pushedLines - 1
   view.content = new StyledText(chunks)
+}
+
+/** Map a click/drag row on the scrollbar to a scroll offset. */
+function applyScrollBar(y: number): void {
+  if (scrollBarHit === undefined) return
+  const ratio = (y - scrollBarHit.top + 0.5) / Math.max(1, scrollBarHit.height)
+  const clamped = Math.min(1, Math.max(0, ratio))
+  state.scroll = Math.round((1 - clamped) * scrollBarHit.maxScroll)
+  redraw()
 }
 
 let pendingRedraw: ReturnType<typeof setTimeout> | undefined
@@ -1781,6 +1818,23 @@ process.on('exit', () => {
 
 ;(view as unknown as { onMouse?: (event: { type?: string; x?: number; y?: number; scroll?: { direction?: string } }) => void }).onMouse = (event) => {
   if (process.env.ASHCODE_MOUSE === '0') return
+  // Scrollbar: click to jump, drag to scrub. Runs before selection handling so a
+  // drag on the bar never turns into a text selection.
+  if (scrollBarHit !== undefined && event.x !== undefined && event.y !== undefined) {
+    const onBar = event.x === scrollBarHit.column
+      && event.y >= scrollBarHit.top && event.y < scrollBarHit.top + scrollBarHit.height
+    if (event.type === 'down' && onBar) {
+      scrollDragging = true
+      renderer.clearSelection()
+      applyScrollBar(event.y)
+      return
+    }
+    if ((event.type === 'drag' || event.type === 'move') && scrollDragging) {
+      applyScrollBar(event.y)
+      return
+    }
+  }
+  if (event.type === 'up' && scrollDragging) { scrollDragging = false; return }
   // Stop button on the composer's bottom border, mirroring DSH's stop affordance.
   if (event.type === 'down' && state.busy && stopHit !== undefined
     && event.x !== undefined && event.y !== undefined
@@ -1797,6 +1851,7 @@ process.on('exit', () => {
     return
   }
   if (event.type !== 'scroll' || event.scroll === undefined) return
+  if (scrollDragging) return
   const step = Math.max(1, Math.round((renderer.height - 8) / 4))
   state.scroll += event.scroll.direction === 'up' ? step : -step
   redraw()
