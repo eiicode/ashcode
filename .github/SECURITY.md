@@ -1,41 +1,56 @@
-# 安全策略
+English | [中文](SECURITY.zh.md)
 
-## 支持的版本
+# Security policy
 
-| 版本 | 支持 |
+## Supported versions
+
+| Version | Supported |
 |---|---|
 | `1.x` | ✅ |
 | `< 1.0` | ❌ |
 
-平台支持仅限 Windows 10/11；macOS / Linux 的安装脚本未做冒烟验证，不在支持范围内。
+Platform support is Windows 10/11 only; the macOS / Linux install script has not
+been smoke-tested and is out of scope.
 
-## 报告漏洞
+## Reporting a vulnerability
 
-**不要**在公开 issue 中披露漏洞细节，也不要粘贴任何 API Key 或带凭据的日志。
+**Do not** disclose details in a public issue, and never paste an API key or a log
+containing credentials.
 
-1. 打开仓库的 **Security** 标签页 → **Report a vulnerability**（GitHub 私密漏洞报告）；
-2. 如果该入口不可用，请先开一个**不含细节**的 issue，说明需要一条私密沟通渠道。
+1. Open the repository's **Security** tab → **Report a vulnerability** (GitHub
+   private vulnerability reporting);
+2. If that entry point is unavailable, open an issue that contains **no details**
+   and ask for a private channel.
 
-这是个人维护的开源项目，响应是 best-effort，不提供 SLA。
+This is a personally maintained open-source project: responses are best-effort,
+with no SLA.
 
-## 范围
+## Scope
 
-**在范围内**
+**In scope**
 
-- 审批 / 权限绕过：工具调用未经确认即执行、权限预设被静默降级
-- 命令注入：本项目会 spawn `node` 与 `dsh`，注入点包括 `--home`、`--resume`、附件路径、`ASHCODE_NODE_EXECUTABLE`
-- 凭据泄露：API Key 被写入日志、状态栏、终端回滚缓冲或错误信息
-- 终端转义序列注入：模型输出被直接写入终端（OSC 8 链接、OSC 52 剪贴板等）
-- 发布链路：安装器 / 打包脚本以超出预期的方式写入 PATH 或覆盖文件
+- Approval / permission bypass: a tool call running without confirmation, or a
+  permission preset being silently downgraded
+- Command injection: this project spawns `node` and `dsh`, with injection points
+  including `--home`, `--resume`, attachment paths and `ASHCODE_NODE_EXECUTABLE`
+- Credential leakage: an API key ending up in logs, the status bar, the terminal
+  scrollback or an error message
+- Terminal escape-sequence injection: model output written straight to the
+  terminal (OSC 8 links, OSC 52 clipboard, and so on)
+- Release chain: the installer / pack scripts writing to PATH or overwriting files
+  beyond what is documented
 
-**已知设计，不算漏洞**
+**Known by design, not a vulnerability**
 
-- API Key 以明文保存在应用目录的 `.env.local`（见 README；可用环境变量替代）
-- 默认权限预设为 `workspace-write`
-- 本项目**不实现**沙箱与审批策略，它们由 DSH 运行时负责；本客户端只负责呈现与回传
+- The API key is stored in plain text in the app directory's `.env.local` (see the
+  README; an environment variable can replace it)
+- The default permission preset is `workspace-write`
+- This project **does not implement** the sandbox or the approval policy — the DSH
+  runtime owns them; this client only renders and relays
 
-**不在范围内**
+**Out of scope**
 
-- 上游 `@deepseek-ai/dsh` 自身的问题 —— 请报到 [上游仓库](https://github.com/deepseek-ai/deepseek-harness)
-- 模型输出的内容本身（幻觉、不当建议等）
-- 需要攻击者已具备本机任意代码执行权限的问题
+- Problems in upstream `@deepseek-ai/dsh` — report them to the [upstream repository](https://github.com/deepseek-ai/deepseek-harness)
+- The content of model output (hallucinations, bad advice, and so on)
+- Issues that require the attacker to already have arbitrary code execution on the
+  machine

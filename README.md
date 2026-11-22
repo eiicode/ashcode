@@ -26,7 +26,7 @@ Then open a new terminal and run `ashcode`. Prefer to read it first? [View the i
 
 > **No `npx`:** the entry script's shebang points at Bun, so `npx ashcode` will not work.
 
-**Install & usage:** [docs/USER-GUIDE.md](docs/USER-GUIDE.md) — Chinese only. Design notes (`docs/adr/`), `CHANGELOG.md` and the issue templates are Chinese too.
+**Install & usage:** [docs/USER-GUIDE.md](docs/USER-GUIDE.md). Design notes: [docs/adr/](docs/adr/). Issue templates are Chinese only.
 
 ## Install
 

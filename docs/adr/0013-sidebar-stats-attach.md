@@ -1,36 +1,38 @@
-# ADR-0013：侧栏、统计、选择器与附件
+English | [中文](0013-sidebar-stats-attach.zh.md)
 
-- 状态：Accepted
-- 日期：2026-11-21
-- 版本：0.6.0
+# ADR-0013: Sidebar, stats, choosers and attachments
 
-## 1. 需求与实现
+- Status: Accepted
+- Date: 2026-11-21
+- Version: 0.6.0
 
-| 需求 | 实现 | 数据来源 |
+## 1. Requirements and implementation
+
+| Requirement | Implementation | Data source |
 |---|---|---|
-| 左侧会话栏 + 鼠标点击切换 | ≥100 列默认显示 22 列侧栏（标题、当前会话 `▸`），`Ctrl+B` 显隐；点击 `x∈[2,24)`、`y-2` 命中行 → `switchSession` | 本地 `sessions/` + `onMouse` 的 down 事件 |
-| 状态折叠/计时 | 工具卡保留耗时与折叠结果；状态栏显示轮/步数与 tok/s | `turn/*`、`step/*`、`assistant/message.usage` |
-| 用时统计 | `working Ns` 只统计回合；`lastTurnMs` 用于 tok/s | 同上 |
-| 模型/等级选择器 | `/model`、`/effort` 无参时打开 modal，`↑/↓` + `Enter` 应用（重启 + 新会话） | provider 目录常量（`deepseek-flash`、`deepseek-v4-pro`） |
-| 附件 | `/attach <path>` 读取图片 → base64 → `SdkEncodedImageBlock` 随下一条 prompt 发送 | `dsh-sdk-protocol` 的 image block |
-| 权限展示 | 状态栏显示 `permission/preset` 事件里的 preset，只读 | 事件 |
+| Left session sidebar + click to switch | At ≥100 columns, a 22-column sidebar is shown by default (title, current session `▸`), toggled with `Ctrl+B`; a click with `x∈[2,24)`, `y-2` hitting a row → `switchSession` | Local `sessions/` + the down event of `onMouse` |
+| Status collapse/timing | Tool cards keep elapsed time and collapsed results; the status bar shows turn/step counts and tok/s | `turn/*`, `step/*`, `assistant/message.usage` |
+| Duration stats | `working Ns` counts turns only; `lastTurnMs` is used for tok/s | Same as above |
+| Model/effort chooser | `/model` and `/effort` with no argument open a modal, `↑/↓` + `Enter` applies (restart + new session) | Provider catalog constants (`deepseek-flash`, `deepseek-v4-pro`) |
+| Attachments | `/attach <path>` reads an image → base64 → `SdkEncodedImageBlock` sent with the next prompt | The image block of `dsh-sdk-protocol` |
+| Permission display | The status bar shows the preset from the `permission/preset` event, read-only | Event |
 
-## 2. 关键取舍
+## 2. Key trade-offs
 
-- **侧栏不占满高度**：只覆盖转录区（表头与状态栏保持整宽），避免把输入框也挤窄。
-- **点击区域显式约束**：只有 `x∈[2,24)` 且 `y≥2` 才命中，正文区点击不触发切换。
-- **附件只支持图片**：文本文件让 agent 用 read 工具读取更可靠；图片是唯一必须走 block 的输入。
-- **权限只读**：SDK 协议没有切换 preset 的方法（Web 走 HTTP 网关），TUI 先展示，不做假切换。
+- **The sidebar does not span the full height**: it covers only the transcript area (the header and status bar keep the full width), so the composer is not squeezed narrower.
+- **The click region is explicitly constrained**: only `x∈[2,24)` and `y≥2` hit; clicks in the body area do not trigger a switch.
+- **Attachments support images only**: for text files it is more reliable to let the agent read them with the read tool; images are the only input that must go through a block.
+- **Permissions are read-only**: the SDK protocol has no way to switch presets (the Web goes through the HTTP gateway); the TUI displays it for now and does not fake a switch.
 
-## 3. 验证
+## 3. Verification
 
-- 新增 `sidebar-smoke`（侧栏渲染 + 鼠标点击切换）、`chooser-smoke`（模型/等级选择器）、`attach-smoke`（附件入队）。
-- 全量 `npm test`：18 项通过；`tsc` 通过。
-- 默认 `deepseek-flash` + `high` 的真实回合通过。
+- Added `sidebar-smoke` (sidebar rendering + mouse click switching), `chooser-smoke` (model/effort chooser), `attach-smoke` (attachment enqueueing).
+- Full `npm test`: 18 items pass; `tsc` passes.
+- A real turn with the default `deepseek-flash` + `high` passes.
 
-## 4. 已知限制
+## 4. Known limitations
 
-- 权限预设无法在 TUI 内切换（需上游给 SDK 加方法）。
-- 侧栏不独立滚动，最多显示当前页行数；会话超过 12 个只列最近的。
-- 附件不做缩略图/预览；发送后即清空队列。
-- 状态折叠是“工具卡折叠 + 摘要”，不是 Web 那种任意区块折叠。
+- Permission presets cannot be switched inside the TUI (requires the upstream to add a method to the SDK).
+- The sidebar does not scroll independently and shows at most the current page's rows; beyond 12 sessions only the most recent are listed.
+- Attachments have no thumbnail/preview; the queue is cleared once they are sent.
+- Status collapse is "tool card collapse + summary", not the arbitrary block collapse the Web has.

@@ -1,60 +1,62 @@
-# ashcode 安装与使用说明
+English | [中文](USER-GUIDE.zh.md)
 
-版本 1.0.0 · Windows 为主（macOS/Linux 提供脚本，未做冒烟验证）
+# ashcode Installation and Usage Guide
 
-ashcode 是一个终端界面（TUI），用来操作本机的 DeepSeek Harness（DSH）。它不重写 agent：TUI 负责显示与输入，真正的会话、工具、审批、模型都在 DSH 运行时里。
+Version 1.0.0 · Windows-first (scripts are provided for macOS/Linux, but they have not been smoke-tested)
+
+ashcode is a terminal UI (TUI) for driving the local DeepSeek Harness (DSH). It does not reimplement the agent: the TUI handles display and input, while the real sessions, tools, approvals and models all live in the DSH runtime.
 
 ```
-Bun 进程（TUI 渲染）  ──stdio JSON-RPC──  Node 进程（dsh --profile sdk）
+Bun process (TUI rendering)  ──stdio JSON-RPC──  Node process (dsh --profile sdk)
 ```
 
 ---
 
-## 1. 环境要求
+## 1. Requirements
 
-| 依赖 | 版本 | 说明 |
+| Dependency | Version | Notes |
 |---|---|---|
-| Windows | 10/11 | Windows Terminal 体验最佳 |
-| Node.js | ≥ 24.9 | DSH 运行时（其原生插件要求） |
-| Bun | ≥ 1.3.14 | TUI 渲染；缺失时安装器会 `npm install -g bun` |
-| 网络 | 可访问 npm 与模型 API | 首次安装需要下载依赖 |
+| Windows | 10/11 | Best experience in Windows Terminal |
+| Node.js | ≥ 24.9 | DSH runtime (required by its native plugins) |
+| Bun | ≥ 1.3.14 | TUI rendering; if missing, the installer runs `npm install -g bun` |
+| Network | Access to npm and the model API | The first install downloads dependencies |
 
-不需要 pnpm，不需要浏览器。
+No pnpm and no browser required.
 
 ---
 
-## 2. 安装
+## 2. Installation
 
-安装的默认位置：`%LOCALAPPDATA%\ashcode`（`app\` 是应用副本，`bin\` 是启动器）。
+Default install location: `%LOCALAPPDATA%\ashcode` (`app\` is the application copy, `bin\` is the launcher).
 
-### 方式 A：从仓库安装
+### Option A: install from the repository
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 ```
 
-习惯 cmd 或想双击安装，用同目录下的入口（参数原样透传；无参数运行结束时暂停）：
+If you prefer cmd or want to double-click to install, use the entry point in the same directory (arguments are passed through as-is; a run with no arguments pauses when it finishes):
 
 ```bat
 install.cmd
 ```
 
-### 方式 B：从发布包安装
+### Option B: install from a release package
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\pack.ps1
 powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -Source dist\ashcode-<version>-win-x64.zip
 ```
 
-### 方式 C：一行安装（推荐）
+### Option C: one-line install (recommended)
 
-总是取最新版本，自动下载并安装：
+Always fetches the latest version and installs it automatically:
 
 ```powershell
 irm https://github.com/eiicode/ashcode/releases/latest/download/install.ps1 | iex
 ```
 
-也可以先下 zip 再安装（适合需要固定版本的场景）：
+You can also download the zip first and then install from it (useful when you need to pin a version):
 
 ```powershell
 $zip = "$env:TEMP\ashcode.zip"
@@ -62,63 +64,63 @@ irm https://github.com/eiicode/ashcode/releases/latest/download/ashcode-latest-w
 powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -Source $zip
 ```
 
-> `install.ps1` 不带 `-Source` 且不在仓库内运行时，会自动回退到最新 Release，所以这一行对任何静态托管的副本同样有效。
+> When `install.ps1` is run without `-Source` and outside the repository, it automatically falls back to the latest Release, so this one-liner also works for any statically hosted copy.
 
-### 安装器做了什么
+### What the installer does
 
-1. 校验 Node ≥ 24.9；缺 Bun 时自动安装
-2. 把应用复制到 `%LOCALAPPDATA%\ashcode\apps\app-<version>`
-3. `npm install` 并在必要时补跑被 npm 11 拦截的依赖安装脚本
-4. 生成 `%LOCALAPPDATA%\ashcode\bin\ashcode.cmd`（使用 bun.exe 绝对路径）
-5. 把 `bin` 目录加入**用户 PATH**
-6. 记录 `install.json` 供卸载使用
+1. Verify Node ≥ 24.9; install Bun automatically if it is missing
+2. Copy the application to `%LOCALAPPDATA%\ashcode\apps\app-<version>`
+3. Run `npm install` and, when necessary, re-run the dependency install scripts that npm 11 blocked
+4. Generate `%LOCALAPPDATA%\ashcode\bin\ashcode.cmd` (using the absolute path of bun.exe)
+5. Add the `bin` directory to the **user PATH**
+6. Record `install.json` for uninstallation
 
-### 安装参数
+### Install parameters
 
-| 参数 | 作用 |
+| Parameter | Purpose |
 |---|---|
-| `-Source <路径/URL>` | 从 zip 安装；省略则从当前仓库安装 |
-| `-InstallDir <目录>` | 自定义安装目录，默认 `%LOCALAPPDATA%\ashcode` |
-| `-Force` | 覆盖已有安装 |
-| `-NoPath` | 不修改 PATH（测试用） |
+| `-Source <path/URL>` | Install from a zip; if omitted, install from the current repository |
+| `-InstallDir <dir>` | Custom install directory, defaults to `%LOCALAPPDATA%\ashcode` |
+| `-Force` | Overwrite an existing installation |
+| `-NoPath` | Do not modify PATH (for testing) |
 
-### 验证安装
+### Verify the installation
 
-**新开一个终端**（PATH 需要新会话生效）：
+**Open a new terminal** (PATH takes effect in new sessions):
 
 ```powershell
 ashcode --version      # 1.0.0
 ashcode --help
 ```
 
-> 当前终端里找不到命令时，用完整路径：
+> If the command is not found in the current terminal, use the full path:
 > `%LOCALAPPDATA%\ashcode\bin\ashcode.cmd --version`
 
 ---
 
-## 3. 首次配置（API Key）
+## 3. First-time configuration (API key)
 
-**TUI 内设置（推荐）**：没有检测到 `DEEPSEEK_API_KEY` 时，启动后会弹出 `API Key` 输入框（输入内容以 `*` 显示），`Enter` 保存到应用目录的 `.env.local` 并自动重启运行时。之后可用 `/key` 随时更换。
+**Setting it inside the TUI (recommended)**: when `DEEPSEEK_API_KEY` is not detected, an `API Key` input box pops up after startup (input is shown as `*`); `Enter` saves it to `.env.local` in the application directory and automatically restarts the runtime. You can change it at any time later with `/key`.
 
-也可以手动任选一种：
+You can also pick one of the following manual options:
 
-**a) 写进应用目录的 `.env.local`**（推荐）
+**a) Write it into `.env.local` in the application directory** (recommended)
 
 ```
 # %LOCALAPPDATA%\ashcode\app\.env.local
 DEEPSEEK_API_KEY=sk-...
 ```
 
-从仓库安装时，安装器会自动复制仓库里的 `.env.local`。
+When installing from the repository, the installer automatically copies the `.env.local` from the repository.
 
-**b) 环境变量**
+**b) Environment variable**
 
 ```powershell
 $env:DEEPSEEK_API_KEY = "sk-..."
 ashcode
 ```
 
-**c) 复用桌面版 DSH 的配置**
+**c) Reuse the desktop DSH configuration**
 
 ```powershell
 ashcode --home "$env:USERPROFILE\.dsh"
@@ -126,39 +128,39 @@ ashcode --home "$env:USERPROFILE\.dsh"
 
 ---
 
-## 4. 数据目录
+## 4. Data directory
 
-| 运行方式 | 默认数据目录 |
+| Run mode | Default data directory |
 |---|---|
-| 在仓库目录内运行 | `./.dsh-home` |
-| 安装副本（任意目录） | `%USERPROFILE%\.ashcode` |
-| `--home <path>` / `ASHCODE_HOME` | 指定目录（优先级最高） |
+| Run inside the repository directory | `./.dsh-home` |
+| Installed copy (any directory) | `%USERPROFILE%\.ashcode` |
+| `--home <path>` / `ASHCODE_HOME` | The specified directory (highest priority) |
 
-会话日志、凭据、设置都在数据目录里。想和桌面版 DSH 共用会话与凭据，就 `--home %USERPROFILE%\.dsh`。
+Session logs, credentials and settings all live in the data directory. To share sessions and credentials with the desktop DSH, use `--home %USERPROFILE%\.dsh`.
 
 ---
 
-## 5. 启动与命令行
+## 5. Startup and command line
 
 ```powershell
-ashcode                        # 新会话
-ashcode --resume <sessionId>   # 恢复会话（自动回放历史）
-ashcode --home C:\some\dir     # 指定数据目录
+ashcode                        # new session
+ashcode --resume <sessionId>   # resume a session (replays history automatically)
+ashcode --home C:\some\dir     # specify the data directory
 ashcode --version
 ashcode --help
 ```
 
-未指定 `--resume` 时，启动后是空白转录；发第一条消息即创建会话。
+Without `--resume`, startup shows an empty transcript; sending the first message creates a session.
 
 ---
 
-## 6. 界面
+## 6. Interface
 
 ```
 ashcode · V4.1-Flash · high · BUILD · idle         58.7k↑ 13.6k↓ 94%c $0.012
 ──────────────────────────────────────────────────────────────────────────
-                                          你发的内容（右对齐气泡）
-  助手的 Markdown 回复（标题 / 列表 / 代码块 / 行内代码）
+                               your message (right-aligned bubble)
+  assistant's Markdown reply (headings / lists / code blocks / inline code)
 
 ✓ Read  src/app.ts  0.4s  … +12
 ✓ Edit  src/app.ts  0.2s
@@ -166,19 +168,19 @@ ashcode · V4.1-Flash · high · BUILD · idle         58.7k↑ 13.6k↓ 94%c $0
   - length = pack("<B", n)
   + length = pack("<H", n)
 
-╭─ 修复协议不一致  1/3 ─────────────────────────────────────────────╮
-│ ■ 修正帧头长度字段                                                │
-│ □ 补校验和测试                                                    │
+╭─ Fix protocol mismatch  1/3 ──────────────────────────────────────╮
+│ ■ Fix frame header length field                                   │
+│ □ Add checksum test                                               │
 ╰───────────────────────────────────────────────────────────────────╯
 
 · turn finished: completed
 ready                                                        ↑12
-╭─ 输入 ──────────────────────── Enter 换行 · Ctrl+Enter 发送 ─╮
-│ 输入消息…（Enter 换行，Ctrl+Enter 发送）                  ▌ │
+╭─ Input ──────────────────── Enter newline · Ctrl+Enter send ─╮
+│ Type a message… (Enter newline, Ctrl+Enter send)           ▌ │
 ╰──────────────────────────────────────────────────────────────╯
 ```
 
-有审批或提问时，中间会浮出一个居中面板，转录自动变暗：
+When there is an approval or a question, a centered panel floats up in the middle and the transcript is dimmed automatically:
 
 ```
         ╭─ Approval · pwsh ──────────────╮
@@ -190,239 +192,240 @@ ready                                                        ↑12
         ╰────────────────────────────────╯
 ```
 
-状态含义：
+State meanings:
 
-| 状态 | 含义 |
+| State | Meaning |
 |---|---|
-| `idle` | 空闲 |
-| `working Ns` | 回合进行中，已用时 |
-| `plan` | plan 模式开启（顶栏显示 `PLAN` 徽标） |
-| `↑N` | 正在向上回看 N 行（底部右侧） |
-| `◐` / `✓` / `✗` | 工具运行中 / 成功 / 失败 |
+| `idle` | Idle |
+| `working Ns` | A turn is in progress, elapsed time |
+| `plan` | plan mode is on (the header bar shows the `PLAN` badge) |
+| `↑N` | Scrolling back N lines (bottom right) |
+| `◐` / `✓` / `✗` | Tool running / succeeded / failed |
 
-顶栏右侧显示本会话的用量：
+The right side of the header bar shows this session's usage:
 
 ```
 12.3k↑ 4.1k↓ 78%c $0.0012
 ```
 
-- 顶栏始终显示当前模式：`BUILD`（默认）或 `PLAN`（`Shift+Tab` 切换）
-- 顶栏同时显示模型简写与推理等级，例如 `V4.1-Flash · high`
-- `working Ns` 只在**有回合进行**时计时（从你发送消息开始，到回合结束停止）；空闲时显示 `idle`
+- The header bar always shows the current mode: `BUILD` (default) or `PLAN` (toggled with `Shift+Tab`)
+- The header bar also shows the model short name and the reasoning level, e.g. `V4.1-Flash · high`
+- `working Ns` counts time only **while a turn is in progress** (from when you send a message until the turn ends); when idle it shows `idle`
 
-- `↑` 未命中缓存的输入 token，`↓` 输出 token
-- `%c` 缓存命中率 = 缓存读取 /（输入 + 缓存读 + 缓存写）
-- `$` 估算费用，只有配置了 `ASHCODE_PRICE_*` 才显示
+- `↑` input tokens not served from cache, `↓` output tokens
+- `%c` cache hit rate = cache reads / (input + cache reads + cache writes)
+- `$` estimated cost; shown only when `ASHCODE_PRICE_*` is configured
 
-底部状态栏：`会话[标题] · 权限[工作区可写] · 版本[1.1.0] · 上下文[38%] · 回合[31] · 步骤[233] · 工具[35次] · 速度[207t/s]`
+Bottom status bar: `Session[title] · Permission[workspace writable] · Version[1.1.0] · Context[38%] · Turn[31] · Step[233] · Tool[35 times] · Speed[207t/s]`
 
-终端变窄时，末尾的次要项会依次隐藏（`速度` → `工具` → …），`会话` / `权限` / `版本` 优先保留。
-`上下文` 是最近一次消息占用 / 上下文窗口；`速度` 是本回合的平均吞吐（含工具等待时间）。
+When the terminal narrows, the secondary items at the end are hidden in order (`Speed` → `Tool` → …), while `Session` / `Permission` / `Version` are kept preferentially.
+`Context` is the latest message's occupancy / the context window; `Speed` is this turn's average throughput (including tool wait time).
 
-宽终端（≥100 列）左侧会显示会话栏：标题列表、当前会话 `▸` 高亮；**鼠标点击任意一行即可切换**，`Ctrl+B` 显隐。
+In a wide terminal (≥ 100 columns) a session bar appears on the left: the list of titles, with the current session highlighted by `▸`; **click any row with the mouse to switch**, and `Ctrl+B` shows/hides it.
 
 ---
 
-## 7. 键位
+## 7. Key bindings
 
-| 键 | 作用 |
+| Key | Action |
 |---|---|
-| `Enter` | 发送（`ASHCODE_ENTER=newline` 时改为换行） |
-| `Alt+Enter` / `Shift+Enter` | 换行（多行输入） |
-| `←` / `→` | 左右移动光标 |
-| `Home` / `End` | 跳到行首 / 行尾 |
-| `Delete` | 删除光标处字符 |
-| `Shift+Tab` | 切换 plan 模式（顶部状态栏显示 `PLAN`） |
-| `Ctrl+O` | 展开/折叠所有工具卡 |
-| `Ctrl+B` | 显示/隐藏左侧会话栏（宽度 ≥ 100 列时默认显示，**鼠标点击可切换会话**） |
-| `Ctrl+T` | 显示/隐藏模型的思考过程（默认隐藏） |
-| `Ctrl+F` | 搜索转录：输入关键词，`Enter` 跳到匹配，`Esc` 退出 |
-| `↑` / `↓` | 输入框为空时翻历史；面板内移动选择 |
-| `Tab` | 接受 `@` 文件补全 / `/` 命令补全 |
-| `PgUp` / `Ctrl+U` | 向上翻页（鼠标滚轮同样可用） |
-| `PgDn` / `Ctrl+D` | 向下翻页 |
-| `Esc` | 清空输入；关闭面板/搜索；**回合进行中则取消回合** |
-| `1`–`9` | 面板内直接选择 |
-| `Space` | 多选题勾选 |
-| `Ctrl+C` | 有选区时复制（OSC 52）；否则提示退出（3 秒内再按一次退出） |
-| 鼠标拖拽 | 选择转录文本（选区高亮），`Ctrl+C` 复制 |
-| `Ctrl+点击` | 打开正文里的文件路径（OSC 8 链接） |
+| `Enter` | Send (becomes newline when `ASHCODE_ENTER=newline`) |
+| `Alt+Enter` / `Shift+Enter` | Newline (multi-line input) |
+| `←` / `→` | Move the cursor left / right |
+| `Home` / `End` | Jump to the start / end of the line |
+| `Delete` | Delete the character at the cursor |
+| `Shift+Tab` | Toggle plan mode (the header bar shows `PLAN`) |
+| `Ctrl+O` | Expand/collapse all tool cards |
+| `Ctrl+B` | Show/hide the left session bar (shown by default when width ≥ 100 columns; **click with the mouse to switch sessions**) |
+| `Ctrl+T` | Show/hide the model's thinking process (hidden by default) |
+| `Ctrl+F` | Search the transcript: type a keyword, `Enter` jumps to a match, `Esc` exits |
+| `↑` / `↓` | Cycle history when the composer is empty; move the selection inside a panel |
+| `Tab` | Accept `@` file completion / `/` command completion |
+| `PgUp` / `Ctrl+U` | Page up (the mouse wheel works too) |
+| `PgDn` / `Ctrl+D` | Page down |
+| `Esc` | Clear the composer; close a panel/search; **cancels the turn if a turn is in progress** |
+| `1`–`9` | Select directly inside a panel |
+| `Space` | Check an option in a multiple-choice question |
+| `Ctrl+C` | Copy when there is a selection (OSC 52); otherwise prompts to quit (press again within 3 seconds to quit) |
+| Mouse drag | Select transcript text (selection highlighted); `Ctrl+C` copies |
+| `Ctrl+click` | Open a file path in the body text (OSC 8 link) |
 
-说明：
+Notes:
 
-- 启动瞬间（运行时还在初始化）输入的提示会排队，就绪后自动发送。
-- 输入 `@` 会弹出工作区文件补全；输入 `/` 会弹出命令补全。
-- 鼠标滚轮可滚动转录（需终端支持鼠标上报）。
+- Input typed right at startup (while the runtime is still initializing) is queued and sent automatically once ready.
+- Typing `@` opens workspace file completion; typing `/` opens command completion.
+- The mouse wheel scrolls the transcript (requires the terminal to support mouse reporting).
 
 ---
 
-## 8. 斜杠命令
+## 8. Slash commands
 
-| 命令 | 作用 |
+| Command | Action |
 |---|---|
-| `/help` | 命令与键位速查 |
-| `/new` | 新建会话（清空当前转录，旧会话仍保留在磁盘） |
-| `/model` | 打开模型选择器（`↑/↓` + `Enter`）；`/model <name>` 直接指定 |
-| `/effort` | 打开推理等级选择器（off/low/high/max）；`/effort <level>` 直接指定 |
-| `/attach <path>` | 附加图片（png/jpg/webp/gif，≤8 MiB），随下一条消息发送 |
-| `/team` | 查看团队协作状态；`/team on` / `/team off` 切换（重启运行时并开新会话） |
-| `/sessions` | 打开会话选择器：`↑/↓` 选择、`Enter` 切换、`n` 新建、`r` 重命名（存本地 `tui/titles.json`）、`d` 删除（按两次确认）、`Esc` 关闭 |
-| `/resume <id>` | 直接恢复指定会话并回放历史 |
-| `/key` | 重新输入 API Key（保存到应用目录 `.env.local` 并重启运行时） |
-| `/plan` / `/plan off` | plan 模式开关（顶栏显示 `PLAN`） |
+| `/help` | Quick reference for commands and key bindings |
+| `/new` | Start a new session (clears the current transcript; the old session is still kept on disk) |
+| `/model` | Open the model picker (`↑/↓` + `Enter`); `/model <name>` selects directly |
+| `/effort` | Open the reasoning-level picker (off/low/high/max); `/effort <level>` selects directly |
+| `/attach <path>` | Attach an image (png/jpg/webp/gif, ≤8 MiB), sent with the next message |
+| `/team` | Show agent-team collaboration status; `/team on` / `/team off` toggles it (restarts the runtime and starts a new session) |
+| `/sessions` | Open the session picker: `↑/↓` to select, `Enter` to switch, `n` for new, `r` to rename (stored locally in `tui/titles.json`), `d` to delete (press twice to confirm), `Esc` to close |
+| `/resume <id>` | Resume the specified session directly and replay its history |
+| `/key` | Re-enter the API key (saved to `.env.local` in the application directory and restarts the runtime) |
+| `/plan` / `/plan off` | Toggle plan mode (the header bar shows `PLAN`) |
 
-其余 DSH 原生命令（如 `/compact`）会原样交给运行时处理。
+Other native DSH commands (such as `/compact`) are passed through to the runtime as-is.
 
 ---
 
-## 9. 配置项
+## 9. Configuration
 
-| 变量 | 默认 | 说明 |
+| Variable | Default | Notes |
 |---|---|---|
-| `DEEPSEEK_API_KEY` | — | 模型凭据 |
-| `ASHCODE_HOME` | 见第 4 节 | 数据目录 |
-| `ASHCODE_MODEL` | `deepseek-flash`（显示 V4.1-Flash） | 模型 id |
-| `ASHCODE_ENTER` | `send` | `send`=`Enter` 发送；`newline`=`Enter` 换行、`Ctrl+Enter` 发送 |`n| `ASHCODE_EFFORT` | `high` | 推理等级：`off` / `low` / `high` / `max` |
-| `ASHCODE_TEAM` | 未设置 | 设为 `1` 默认开启智能体团队协作 |
-| `ASHCODE_THEME` | `dark` | `dark` / `light` / `contrast` / `ansi`（跟随终端 16 色） |
-| `ASHCODE_DEBUG` | 未设置 | 写入 `.tui-debug.log` 便于排错 |
-| `ASHCODE_MOUSE` | 开启 | 设为 `0` 关闭鼠标上报（强制结束进程可能残留鼠标模式，用 `--reset-terminal` 修复） |
-| `ASHCODE_PRICE_INPUT` | 未设置 | 输入价（每百万 token，未命中缓存），设置后顶栏显示费用 |
-| `ASHCODE_PRICE_CACHE` | 同输入价 | 缓存命中输入价（每百万 token） |
-| `ASHCODE_PRICE_OUTPUT` | 未设置 | 输出价（每百万 token） |
+| `DEEPSEEK_API_KEY` | — | Model credentials |
+| `ASHCODE_HOME` | See section 4 | Data directory |
+| `ASHCODE_MODEL` | `deepseek-flash` (displayed as V4.1-Flash) | Model id |
+| `ASHCODE_ENTER` | `send` | `send` = `Enter` sends; `newline` = `Enter` inserts a newline and `Ctrl+Enter` sends |
+| `ASHCODE_EFFORT` | `high` | Reasoning level: `off` / `low` / `high` / `max` |
+| `ASHCODE_TEAM` | Unset | Set to `1` to enable agent-team collaboration by default |
+| `ASHCODE_THEME` | `dark` | `dark` / `light` / `contrast` / `ansi` (follows the terminal's 16 colors) |
+| `ASHCODE_DEBUG` | Unset | Writes `.tui-debug.log` to aid troubleshooting |
+| `ASHCODE_MOUSE` | On | Set to `0` to disable mouse reporting (force-killing the process may leave mouse mode behind; fix it with `--reset-terminal`) |
+| `ASHCODE_PRICE_INPUT` | Unset | Input price (per million tokens, cache miss); once set, the header bar shows cost |
+| `ASHCODE_PRICE_CACHE` | Same as input price | Cache-hit input price (per million tokens) |
+| `ASHCODE_PRICE_OUTPUT` | Unset | Output price (per million tokens) |
 
 ---
 
-## 10. 常见问题
+## 10. FAQ
 
-**Q：新终端里 `ashcode` 不是内部或外部命令**
-PATH 只在安装后新开的终端生效。重开终端，或用完整路径 `%LOCALAPPDATA%\ashcode\bin\ashcode.cmd`。
+**Q: In a new terminal, `ashcode` is not recognized as an internal or external command**
+PATH only takes effect in terminals opened after installation. Reopen the terminal, or use the full path `%LOCALAPPDATA%\ashcode\bin\ashcode.cmd`.
 
-**Q：提示找不到 bun / bun 版本过低**
+**Q: It says bun is not found / the bun version is too old**
 ```powershell
 npm install -g bun
-bun --version   # 需要 ≥ 1.3.14
+bun --version   # requires ≥ 1.3.14
 ```
 
-**Q：启动报 `DSH CLI not found`**
-应用副本缺少依赖：重跑安装器（不要加 `-NoPath` 之外的参数），或进入 `%LOCALAPPDATA%\ashcode\app` 手动 `npm install`。
+**Q: Startup reports `DSH CLI not found`**
+The application copy is missing dependencies: re-run the installer (do not pass arguments other than `-NoPath`), or go into `%LOCALAPPDATA%\ashcode\app` and run `npm install` manually.
 
-**Q：工具执行报沙箱/权限错误**
-先重跑安装器让原生安装脚本执行（npm 11 默认拦截）。仍失败时，在应用目录执行：
+**Q: Tool execution reports sandbox/permission errors**
+First re-run the installer so that the native install scripts execute (npm 11 blocks them by default). If it still fails, run this in the application directory:
 ```powershell
 npm approve-scripts --all
 npm rebuild
 ```
 
-**Q：终端一直打印 `^[[<35;91;30M` 之类的乱码**
-原因：TUI 进程被强制结束（例如任务管理器 / 杀进程 / 升级时替换文件），终端仍停留在**鼠标上报模式**，鼠标移动就被当成输入打印出来。两种恢复方式：
+**Q: The terminal keeps printing garbage like `^[[<35;91;30M`**
+Cause: the TUI process was force-killed (for example via Task Manager / killing the process / files replaced during an upgrade), so the terminal is still in **mouse reporting mode** and mouse movement is printed as input. Two ways to recover:
 
-1. 直接关掉这个终端标签页，重开一个（最简单）；
-2. 或者在本终端里执行：
+1. Just close this terminal tab and open a new one (simplest);
+2. Or run this in the current terminal:
 
 ```powershell
 ashcode --reset-terminal
 ```
 
-0.5.2 起鼠标上报默认关闭（需要 `ASHCODE_MOUSE=1` 才启用），并且安装器改为版本化目录，升级不再需要结束正在运行的 TUI。
+Since 0.5.2, mouse reporting is off by default (it requires `ASHCODE_MOUSE=1` to enable), and the installer now uses versioned directories, so upgrading no longer requires terminating a running TUI.
 
-**Q：怎么切换模型**
-输入 `/model` 看当前模型，`/model deepseek-v4-pro` 切换（会重启运行时并开一个新会话）。默认模型也可用 `ASHCODE_MODEL` 指定。
+**Q: How do I switch models**
+Type `/model` to see the current model, and `/model deepseek-v4-pro` to switch (this restarts the runtime and starts a new session). The default model can also be set with `ASHCODE_MODEL`.
 
-**Q：怎么切换 / 新建 / 删除会话**
-输入 `/sessions` 打开选择器：`↑/↓` 选择、`Enter` 切换、`n` 新建、`d` 按两次删除、`Esc` 关闭。也可以直接 `/new`，或用 `ashcode --resume <id>` 启动时进入指定会话。
+**Q: How do I switch / create / delete sessions**
+Type `/sessions` to open the picker: `↑/↓` to select, `Enter` to switch, `n` for new, `d` pressed twice to delete, `Esc` to close. You can also use `/new` directly, or start straight into a given session with `ashcode --resume <id>`.
 
-**Q：为什么看不到费用**
-费用需要单价：设置 `ASHCODE_PRICE_INPUT`（未命中缓存输入）、`ASHCODE_PRICE_CACHE`（命中缓存输入，默认同输入价）、`ASHCODE_PRICE_OUTPUT`（单位：每百万 token）。不设置时只显示 token 与缓存命中率。
+**Q: Why can't I see the cost**
+Cost needs unit prices: set `ASHCODE_PRICE_INPUT` (input not served from cache), `ASHCODE_PRICE_CACHE` (cache-hit input, defaults to the input price) and `ASHCODE_PRICE_OUTPUT` (unit: per million tokens). Without them, only tokens and the cache hit rate are shown.
 
-**Q：按 Enter 没发送**
-这是设计如此：`Enter` 换行，`Ctrl+Enter` 发送。部分终端不上报 `Ctrl+Enter`，用 `Alt+Enter` 发送（效果相同）。
+**Q: Pressing Enter does not send**
+That is by design: `Enter` inserts a newline and `Ctrl+Enter` sends. Some terminals do not report `Ctrl+Enter`; use `Alt+Enter` to send instead (same effect).
 
-**Q：为什么思考过程/工具说明是英文**
-那是模型的**推理内容（thinking）**，不是界面翻译。模型的推理习惯用英文，最终回答会跟随你的语言。0.5.1 起思考默认隐藏，按 `Ctrl+T` 可查看。若希望连推理也用中文，可在 DSH 的 system prompt 里追加语言偏好（后续会做成 `/lang` 命令）。
+**Q: Why are the thinking process / tool descriptions in English**
+That is the model's **reasoning content (thinking)**, not UI translation. The model tends to reason in English, while the final answer follows your language. Since 0.5.1, thinking is hidden by default; press `Ctrl+T` to view it. If you want even the reasoning in Chinese, you can append a language preference to DSH's system prompt (this will later become the `/lang` command).
 
-**Q：中文或边框错位**
-建议使用 Windows Terminal（或 iTerm2），并确认字体等宽。conhost 对宽字符支持较差。
+**Q: Chinese text or borders are misaligned**
+Use Windows Terminal (or iTerm2) and make sure the font is monospaced. conhost has poor support for wide characters.
 
-**Q：审批一直被拒**
-面板默认选中 `allow once`，`↓` + `Enter` 可改选。审批只对当前动作生效，不会持久放行。
+**Q: Approvals keep getting rejected**
+The panel selects `allow once` by default; press `↓` + `Enter` to change the selection. An approval applies only to the current action and does not grant a persistent allow.
 
-**Q：`Esc` 取消后回合内容不全**
-取消的实现是“重启 harness + 恢复会话”，当前回合尚未落盘的部分输出会丢失，这是刻意取舍（DSH SDK 协议没有 cancel）。
+**Q: Turn content is incomplete after cancelling with `Esc`**
+Cancelling is implemented as "restart the harness + resume the session", so output from the current turn that has not yet been persisted to disk is lost. This is a deliberate trade-off (the DSH SDK protocol has no cancel).
 
-**Q：想清理数据**
-删除数据目录（默认 `%USERPROFILE%\.ashcode` 或 `./.dsh-home`）即可；不影响程序本身。
+**Q: I want to clean up the data**
+Just delete the data directory (by default `%USERPROFILE%\.ashcode` or `./.dsh-home`); this does not affect the program itself.
 
 ---
 
-## 11. 升级与卸载
+## 11. Upgrade and uninstall
 
-**升级**：重新运行安装器（会覆盖 app 副本，保留数据目录）。
+**Upgrade**: re-run the installer (it overwrites the app copy and keeps the data directory).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -Force
 ```
 
-**卸载**：
+**Uninstall**:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\uninstall.ps1
 ```
 
-或 cmd 入口：`uninstall.cmd`。会删除启动器、应用副本与 PATH 条目，保留你的数据目录。
+Or the cmd entry point: `uninstall.cmd`. It removes the launcher, the application copy and the PATH entry, and keeps your data directory.
 
 ---
 
-## 12. 已知限制
+## 12. Known limitations
 
-- 只在 Windows 上验证；macOS/Linux 的 `install.sh` 未跑冒烟。
-- 没有单文件二进制：`bun build --compile` 无法嵌入 OpenTUI 原生库，安装依赖 Node + Bun。
-- 无语法高亮：diff 只有整行红/绿。
-- 取消回合等于重启运行时（见 FAQ）。
-- 会话标题来自日志，仅用于列表与表头，不支持全文搜索。
+- Only verified on Windows; `install.sh` for macOS/Linux has not been smoke-tested.
+- No single-file binary: `bun build --compile` cannot embed the OpenTUI native library, so installation requires Node + Bun.
+- No syntax highlighting: diffs are only whole-line red/green.
+- Cancelling a turn is equivalent to restarting the runtime (see the FAQ).
+- Session titles come from the logs and are used only for the list and the header; full-text search is not supported.
 
 ---
 
-## 13. 在 VS Code 集成终端里使用
+## 13. Using it in the VS Code integrated terminal
 
-可以。VS Code 的集成终端是真实终端（Windows 下走 ConPTY），TUI 能正常渲染与接收按键。
+Yes. VS Code's integrated terminal is a real terminal (ConPTY on Windows), so the TUI renders and receives key presses normally.
 
-**最简单**：重启一次 VS Code（让它继承安装后的 PATH），在集成终端里进入项目目录后运行：
+**Simplest**: restart VS Code once (so that it inherits the post-install PATH), then in the integrated terminal change into your project directory and run:
 
 ```powershell
 ashcode
 ```
 
-**用任务启动**（本仓库自带 `.vscode/tasks.json`）：`Terminal → Run Task…` 选择：
+**Start it from a task** (this repository ships `.vscode/tasks.json`): use `Terminal → Run Task…` and choose:
 
-| 任务 | 作用 |
+| Task | Purpose |
 |---|---|
-| `ashcode: Run here` | 以当前工作区为 agent 的 cwd 启动 |
-| `ashcode: Resume session` | 输入会话 id 直接恢复 |
-| `ashcode: Share desktop home` | 用 `--home ~/.dsh` 启动，看到桌面版的会话与凭据 |
+| `ashcode: Run here` | Start with the current workspace as the agent's cwd |
+| `ashcode: Resume session` | Enter a session id to resume it directly |
+| `ashcode: Share desktop home` | Start with `--home ~/.dsh` to see the desktop version's sessions and credentials |
 
-**注意事项**
+**Notes**
 
-- 终端 profile 请用 PowerShell 或 cmd；**Git Bash** 里用 `cmd //c ashcode`；**WSL** profile 里不能用（那是 Linux 环境，需要另外在 WSL 内安装）。
-- 字体建议 Cascadia Code / Consolas，等宽且含框线字符。
-- 若某些键被 VS Code 抢走，可在设置里加：
+- Use PowerShell or cmd for the terminal profile; in **Git Bash** use `cmd //c ashcode`; it does not work in a **WSL** profile (that is a Linux environment, and it must be installed separately inside WSL).
+- Cascadia Code / Consolas are recommended as the font: monospaced and containing box-drawing characters.
+- If VS Code steals some keys, add this in the settings:
   ```json
   "terminal.integrated.commandsToSkipShell": ["-workbench.action.quickOpen"]
   ```
-  或临时打开 `"terminal.integrated.sendKeybindingsToShell": true`。
-- 任务使用 `${env:LOCALAPPDATA}\ashcode\bin\ashcode.cmd`，安装到其他目录时请改这个路径。
+  or temporarily enable `"terminal.integrated.sendKeybindingsToShell": true`.
+- The tasks use `${env:LOCALAPPDATA}\ashcode\bin\ashcode.cmd`; if you install to another directory, change this path.
 
 ---
 
-## 14. 开发者参考
+## 14. Developer reference
 
 ```powershell
 npm install
-npm run tui            # 直接从源码运行
-npm test               # 10 项 ConPTY 冒烟
+npm run tui            # run directly from source
+npm test               # 10 ConPTY smoke tests
 npm run typecheck
-npm run pack           # 打发布包
+npm run pack           # build the release package
 ```
 
-- 架构决策：`docs/adr/`
-- 源码：`src/ui/app.ts`（界面）、`src/runtime/stdio-sdk.ts`（与 DSH 的 JSON-RPC 传输）
+- Architecture decisions: `docs/adr/`
+- Source: `src/ui/app.ts` (UI), `src/runtime/stdio-sdk.ts` (JSON-RPC transport with DSH)

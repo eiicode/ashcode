@@ -1,62 +1,79 @@
-# 贡献指南
+English | [中文](CONTRIBUTING.zh.md)
 
-感谢参与。这个项目只做一件事：把 DSH 运行时**显示**在终端里并接收输入。会话、工具、审批、模型、沙箱都在 `@deepseek-ai/dsh` 里——涉及这些能力的改动通常应该做成 dsh 插件，而不是改本仓库。
+# Contributing
 
-## 环境
+Thanks for helping. This project does exactly one thing: it **displays** the DSH
+runtime in a terminal and takes input. Sessions, tools, approvals, models and the
+sandbox all live in `@deepseek-ai/dsh` — changes to those capabilities usually
+belong in a dsh plugin, not in this repository.
 
-| 依赖 | 版本 | 说明 |
+## Environment
+
+| Dependency | Version | Notes |
 |---|---|---|
-| Windows | 10/11 | 唯一验证过的平台 |
-| Node.js | ≥ 24.9.0 | 运行 DSH 运行时（其原生插件要求） |
-| Bun | ≥ 1.3.14 | 渲染 TUI |
-| PowerShell | 5.1+ | 安装 / 打包 / 发布脚本按 5.1 兼容编写 |
+| Windows | 10/11 | The only verified platform |
+| Node.js | ≥ 24.9.0 | Runs the DSH runtime (its native addons require it) |
+| Bun | ≥ 1.3.14 | Renders the TUI |
+| PowerShell | 5.1+ | The install / pack / release scripts are written to stay 5.1-compatible |
 
-macOS / Linux 有 `scripts/install.sh`，但未做冒烟验证。相关 PR 欢迎，但请说明你实测到了哪一步。
+macOS / Linux have `scripts/install.sh`, but it has not been smoke-tested. PRs are
+welcome — just say how far you actually got.
 
-## 本地开发
+## Local development
 
 ```powershell
-npm install          # 依赖较多，首次几分钟；peer 冲突时加 --legacy-peer-deps
-npm run typecheck    # tsc --noEmit，提交前必须通过
-npm run tui          # 直接启动 TUI（= bun src/ui/app.ts）
+npm install          # many dependencies; first run takes a few minutes. Add --legacy-peer-deps on peer conflicts
+npm run typecheck    # tsc --noEmit; must pass before you commit
+npm run tui          # start the TUI directly (= bun src/ui/app.ts)
 ```
 
-> `npm run tui` 不经过 `bin/ashcode.mjs`，所以**不会**读取 `.env.local`。请先设置环境变量 `DEEPSEEK_API_KEY`。
-> 想跑安装态，用 `npm run install:local`，之后用 `ashcode` 启动。
+> `npm run tui` bypasses `bin/ashcode.mjs`, so it does **not** read `.env.local`.
+> Set the `DEEPSEEK_API_KEY` environment variable first.
+> To exercise an installed copy, use `npm run install:local` and then run `ashcode`.
 
-## 测试
+## Tests
 
-`npm test` 会串行跑 19 个 ConPTY 冒烟（`scripts/run-smokes.mjs`）。它有硬性前提：
+`npm test` runs 19 ConPTY smoke tests in sequence (`scripts/run-smokes.mjs`). Its
+prerequisites are hard requirements:
 
-- Windows + 真实终端（ConPTY）；
-- 已安装的 ashcode（`%LOCALAPPDATA%\ashcode\bin\ashcode.cmd`）；
-- 真实可用的 `DEEPSEEK_API_KEY`；
-- `bun.exe` 位于 `%APPDATA%\npm\node_modules\bun\bin\bun.exe`（路径写死在 `scripts/run-smokes.mjs`）。
+- Windows with a real terminal (ConPTY);
+- an installed ashcode (`%LOCALAPPDATA%\ashcode\bin\ashcode.cmd`);
+- a working `DEEPSEEK_API_KEY`;
+- `bun.exe` at `%APPDATA%\npm\node_modules\bun\bin\bun.exe` (the path is
+  hard-coded in `scripts/run-smokes.mjs`).
 
-因此**这些冒烟无法在 CI 运行**。CI 只跑 `typecheck` 与 `pack` 两个不依赖 PTY 的检查。提交 PR 时请至少跑 `npm run typecheck`，并说明你手工验证过哪些交互。
+Because of that, **these smoke tests cannot run in CI**. CI only runs `typecheck`
+and `pack`, which do not need a PTY. For a PR, at minimum run
+`npm run typecheck` and describe which interactions you verified by hand.
 
-单个冒烟：`npm run smoke:tui`、`npm run smoke:approval` 等（见 `package.json`）。
+Single smoke test: `npm run smoke:tui`, `npm run smoke:approval`, and so on (see
+`package.json`).
 
-## 代码结构
+## Code layout
 
-| 路径 | 职责 |
+| Path | Responsibility |
 |---|---|
-| `src/ui/app.ts` | 主渲染循环、状态机、面板、输入处理（单文件，约 1600 行） |
-| `src/ui/render.ts` | 行 / span 模型与布局辅助 |
-| `src/ui/markdown.ts` | 终端 Markdown 渲染 |
-| `src/ui/theme.ts` | 语义调色板（`dark` / `light` / `contrast` / `ansi`） |
-| `src/runtime/stdio-sdk.ts` | 拉起 `dsh --profile sdk` 并走 stdio JSON-RPC |
-| `bin/ashcode.mjs` | 入口：加载 `.env.local`、`--help` / `--version` |
-| `scripts/` | 安装、打包、发布、冒烟 |
+| `src/ui/app.ts` | Main render loop, state machine, panels, input handling (single file, ~1600 lines) |
+| `src/ui/render.ts` | Line / span model and layout helpers |
+| `src/ui/markdown.ts` | Terminal Markdown rendering |
+| `src/ui/theme.ts` | Semantic palette (`dark` / `light` / `contrast` / `ansi`) |
+| `src/runtime/stdio-sdk.ts` | Spawns `dsh --profile sdk` and speaks stdio JSON-RPC |
+| `bin/ashcode.mjs` | Entry point: loads `.env.local`, `--help` / `--version` |
+| `scripts/` | Install, pack, release, smoke tests |
 
-架构决策见 `docs/adr/`。**改动传输层或运行时分工前，请先读 ADR-0002**——双进程不是设计偏好，是两边唯一可用的组合。
+Architecture decisions live in `docs/adr/`. **Read ADR-0002 before touching the
+transport layer or the runtime split** — the two-process design is not a
+preference, it is the only combination that works on both sides.
 
-## 提交与发版
+## Commits and releases
 
-- 提交信息用 conventional commits 前缀（`feat:` / `fix:` / `test:` / `chore:` / `docs:`）。
-- `CHANGELOG.md` 手写；发版时 `scripts/release.ps1` 会把对应版本小节抽出来作为 Release 说明，所以小节标题必须严格是 `## <version> — <date>`。
-- 不要在 PR 里改 `package.json` 的 `version`。
+- Use conventional-commit prefixes (`feat:` / `fix:` / `test:` / `chore:` / `docs:`).
+- `CHANGELOG.md` (English) and `CHANGELOG.zh.md` (Chinese) are hand-written. At
+  release time `scripts/release.ps1` pulls the matching section from both, so
+  version headings must be exactly `## <version> — <date>` and must match across
+  the two files.
+- Do not change `version` in `package.json` in a PR.
 
-## 语言
+## Language
 
-中文或英文都可以，issue / PR / 注释均不限。
+Chinese or English, either is fine — issues, PRs and code comments alike.

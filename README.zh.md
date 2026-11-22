@@ -26,7 +26,7 @@ irm https://github.com/eiicode/ashcode/releases/latest/download/install.ps1 | ie
 
 > **不支持 `npx`**：入口脚本的 shebang 指向 Bun，`npx ashcode` 无法运行。
 
-**安装与使用**：[docs/USER-GUIDE.md](docs/USER-GUIDE.md)（面向用户）；本文档面向开发者。
+**安装与使用**：[docs/USER-GUIDE.md](docs/USER-GUIDE.zh.md)（面向用户）；本文档面向开发者。
 
 ## 安装
 
@@ -66,7 +66,7 @@ ashcode
 
 分成两个进程不是设计偏好：Bun 加载不了 DSH 的原生插件，Node 渲染不了 OpenTUI。实验记录见 ADR-0002。
 
-决策记录：[ADR-0001](docs/adr/0001-ashcode-architecture.md) · [0002](docs/adr/0002-m0-verdict-cross-process.md) · [0003](docs/adr/0003-m2-m3-delivery.md) · [0004](docs/adr/0004-known-issues-fixes.md) · [0005](docs/adr/0005-styling-install.md) · [0006](docs/adr/0006-packaging-install.md) · [0007](docs/adr/0007-ui-redesign.md) · [0008](docs/adr/0008-composer-and-noise.md) · [0009](docs/adr/0009-input-and-status.md) · [0010](docs/adr/0010-sessions-usage-key.md) · [0011](docs/adr/0011-mode-timer-model.md) · [0012](docs/adr/0012-default-model-effort.md) · [0013](docs/adr/0013-sidebar-stats-attach.md) · [0014](docs/adr/0014-team-mode.md) · [CHANGELOG](CHANGELOG.md)
+决策记录：[ADR-0001](docs/adr/0001-ashcode-architecture.zh.md) · [0002](docs/adr/0002-m0-verdict-cross-process.zh.md) · [0003](docs/adr/0003-m2-m3-delivery.zh.md) · [0004](docs/adr/0004-known-issues-fixes.zh.md) · [0005](docs/adr/0005-styling-install.zh.md) · [0006](docs/adr/0006-packaging-install.zh.md) · [0007](docs/adr/0007-ui-redesign.zh.md) · [0008](docs/adr/0008-composer-and-noise.zh.md) · [0009](docs/adr/0009-input-and-status.zh.md) · [0010](docs/adr/0010-sessions-usage-key.zh.md) · [0011](docs/adr/0011-mode-timer-model.zh.md) · [0012](docs/adr/0012-default-model-effort.zh.md) · [0013](docs/adr/0013-sidebar-stats-attach.zh.md) · [0014](docs/adr/0014-team-mode.zh.md) · [CHANGELOG](CHANGELOG.zh.md)
 
 ## 从源码运行
 
@@ -89,7 +89,7 @@ npm run tui          # = bun src/ui/app.ts
 | `npm test` | 19 个 ConPTY 冒烟（见下） |
 | `npm run smoke:<name>` | 单个冒烟，如 `npm run smoke:tui` |
 
-`npm test` 需要 Windows + 已安装的 ashcode + 真实 `DEEPSEEK_API_KEY`，并假定 `bun.exe` 在 `%APPDATA%\npm\node_modules\bun\bin\bun.exe`。**它无法在 CI 运行**，CI 只跑 `typecheck` 与 `pack`。细节见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+`npm test` 需要 Windows + 已安装的 ashcode + 真实 `DEEPSEEK_API_KEY`，并假定 `bun.exe` 在 `%APPDATA%\npm\node_modules\bun\bin\bun.exe`。**它无法在 CI 运行**，CI 只跑 `typecheck` 与 `pack`。细节见 [CONTRIBUTING.md](CONTRIBUTING.zh.md)。
 
 ## 环境变量
 

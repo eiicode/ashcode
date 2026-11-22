@@ -1,40 +1,42 @@
-# ADR-0008：输入区独立与信息降噪
+English | [中文](0008-composer-and-noise.zh.md)
 
-- 状态：Accepted
-- 日期：2026-11-21
-- 版本：0.5.1
+# ADR-0008: Composer Separation and Information Noise Reduction
 
-## 1. 问题
+- Status: Accepted
+- Date: 2026-11-21
+- Version: 0.5.1
 
-1. 输入区与转录区之间只有一条状态行，边界不清；输入框只有 `> ▌`，不醒目。
-2. `Enter` 直接发送，多行输入要按 `Shift+Enter`，与用户习惯相反。
-3. 默认渲染模型思考（英文），视觉上像“中文被翻译成英文”。
-4. 转录里混有一次性提示、原始表格、长链接等噪音。
+## 1. Problems
 
-## 2. 决策
+1. Only a single status line separates the composer from the transcript, so the boundary is unclear; the input box is just `> ▌` and does not stand out.
+2. `Enter` sends directly, and multi-line input requires `Shift+Enter`, the opposite of user habits.
+3. Model thinking (in English) is rendered by default, which visually looks like “Chinese translated into English”.
+4. The transcript is mixed with noise such as one-off hints, raw tables, and long links.
 
-| 项 | 决策 |
+## 2. Decisions
+
+| Item | Decision |
 |---|---|
-| 输入区 | 独立边框盒（`╭─ 输入 … ─╮`），右侧常驻快捷键提示，空输入显示占位文案；与转录之间保留空行 + 状态栏 |
-| 发送键 | `Enter` 换行，`Ctrl+Enter` 发送；`Alt+Enter` 作为等价的兼容键（终端不支持 kitty 键盘协议时使用） |
-| 多行 | 输入可多行，超过 8 行时显示 `… +N`，光标固定在最后一行 |
-| 思考 | 默认隐藏，`Ctrl+T` 切换；不参与默认排版噪声 |
-| 表格 | 解析管道表格，按显示宽度对齐（中文按 2 列计），行内标记先剥离再排版 |
-| 链接 | `[label](url)` 渲染为带 OSC 8 链接的 label，不再暴露裸 URL |
-| 一次性提示 | 移除启动时的 home 提示；其余状态走底部状态栏 |
+| Composer | A separate bordered box (`╭─ 输入 … ─╮`) with persistent shortcut hints on the right and placeholder text for empty input; a blank line + status bar separate it from the transcript |
+| Send key | `Enter` inserts a newline, `Ctrl+Enter` sends; `Alt+Enter` is an equivalent compatibility key (used when the terminal does not support the kitty keyboard protocol) |
+| Multi-line | Input can span multiple lines; beyond 8 lines it shows `… +N`, with the cursor fixed on the last line |
+| Thinking | Hidden by default, toggled with `Ctrl+T`; not part of default layout noise |
+| Tables | Pipe tables are parsed and aligned by display width (Chinese counts as 2 columns); inline markup is stripped before layout |
+| Links | `[label](url)` renders as the label with an OSC 8 link, no longer exposing the bare URL |
+| One-off hints | The startup home hint is removed; other states go to the bottom status bar |
 
-## 3. 关于“中文被翻译成英文”
+## 3. On “Chinese Translated into English”
 
-这不是 TUI 的翻译行为。截图中的英文出现在 `thinking`（推理）与工具描述里，是模型自身的推理语言；最终回答仍跟随用户语言。DSH 默认 system prompt 也是英文。当前处理：默认隐藏 thinking（`Ctrl+T` 可看）。后续可选：TUI 生成一个带语言偏好的 `--patch` 覆盖 system prompt。
+This is not translation behavior of the TUI. The English in the screenshot appears in `thinking` (reasoning) and tool descriptions and is the model's own reasoning language; the final answer still follows the user's language. The DSH default system prompt is also in English. Current handling: hide thinking by default (viewable with `Ctrl+T`). Optional follow-up: the TUI generates a `--patch` with a language preference that overrides the system prompt.
 
-## 4. 验证
+## 4. Verification
 
-- `npm test`：10 项冒烟全部通过（驱动改为发送 kitty `Ctrl+Enter` 序列）。
-- 真实模型回合：多行输入 + `Ctrl+Enter` 发送 → 工具卡 → 回答。
-- `scripts/layout-preview.mjs`：表格/链接/代码块布局目检通过。
+- `npm test`: all 10 smoke tests pass (the driver now sends the kitty `Ctrl+Enter` sequence).
+- Real model turn: multi-line input + `Ctrl+Enter` to send → tool card → answer.
+- `scripts/layout-preview.mjs`: table/link/code block layout passes visual inspection.
 
-## 5. 未做
+## 5. Not Done
 
-- `/lang` 命令（写 system prompt 偏好）。
-- 输入框内光标移动（目前只能在末尾编辑）。
-- 终端不支持 kitty 协议时自动提示改用 `Alt+Enter`。
+- `/lang` command (writes the system prompt preference).
+- Cursor movement within the input box (currently editing is only possible at the end).
+- Automatic hint to switch to `Alt+Enter` when the terminal does not support the kitty protocol.

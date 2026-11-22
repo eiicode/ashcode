@@ -1,29 +1,31 @@
-# ADR-0012：默认模型与推理等级
+English | [中文](0012-default-model-effort.zh.md)
 
-- 状态：Accepted
-- 日期：2026-11-21
-- 版本：0.5.7
+# ADR-0012: Default model and reasoning effort
 
-## 1. 决策
+- Status: Accepted
+- Date: 2026-11-21
+- Version: 0.5.7
 
-默认模型从 `deepseek-v4-flash` 改为 **`deepseek-flash`**（provider 目录里显示为 `DeepSeek-V4.1-Flash`），默认推理等级 **`high`**。
+## 1. Decision
 
-依据：`dsh-llm-deepseek` 的内置目录只有两个条目 —— `deepseek-flash`（名称 `DeepSeek-V4.1-Flash`）与 `deepseek-v4-pro`；`deepseek-v4-flash` 并不是目录里的 id。默认值与 Web UI 截图中显示的一致。
+The default model changes from `deepseek-v4-flash` to **`deepseek-flash`** (shown as `DeepSeek-V4.1-Flash` in the provider catalog), with default reasoning effort **`high`**.
 
-## 2. 实现
+Rationale: the built-in catalog of `dsh-llm-deepseek` has only two entries — `deepseek-flash` (name `DeepSeek-V4.1-Flash`) and `deepseek-v4-pro`; `deepseek-v4-flash` is not an id in the catalog. The default values match what is shown in the Web UI screenshot.
 
-- `PortOptions.reasoningEffort` 传入 SDK `initialize` 的 `reasoningEffort`。
-- 顶栏显示简写映射：`deepseek-flash → V4.1-Flash`、`deepseek-v4-pro → V4-Pro`，并追加等级，例如 `V4.1-Flash · high`。
-- 新增 `/effort <off|low|high|max>`：更新等级 → 重启 harness → 开新会话；`/effort` 显示当前值。
-- 环境变量 `ASHCODE_EFFORT` 覆盖默认等级。
+## 2. Implementation
 
-## 3. 验证
+- `PortOptions.reasoningEffort` is passed to the `reasoningEffort` of the SDK `initialize`.
+- The header bar shows short-name mappings: `deepseek-flash → V4.1-Flash`, `deepseek-v4-pro → V4-Pro`, with the effort appended, e.g. `V4.1-Flash · high`.
+- Add `/effort <off|low|high|max>`: updates the effort → restarts the harness → opens a new session; `/effort` shows the current value.
+- The environment variable `ASHCODE_EFFORT` overrides the default effort.
 
-- 真实模型回合在默认 `deepseek-flash` + `high` 下通过（读文件 → 工具卡 → 回答）。
-- `/model` 与 `/effort` 切换后 harness 正常重启（代际计数避免误判崩溃）。
-- `tsc` 通过。
+## 3. Verification
 
-## 4. 遗留
+- A real model turn passes under the default `deepseek-flash` + `high` (read file → tool card → answer).
+- After `/model` and `/effort` switches the harness restarts normally (the generation counter prevents misjudging a crash).
+- `tsc` passes.
 
-- 模型目录未自动发现：provider 有 `/models` 接口，可后续做成选择器并动态拉取；当前依赖显式 id 或 `ASHCODE_MODEL`。
-- 切换模型/等级会新开会话，旧会话仍可用 `/sessions` 恢复。
+## 4. Outstanding
+
+- The model catalog is not auto-discovered: the provider has a `/models` endpoint, which could later be made into a picker with dynamic fetching; currently it relies on an explicit id or `ASHCODE_MODEL`.
+- Switching model/effort opens a new session; old sessions can still be restored via `/sessions`.

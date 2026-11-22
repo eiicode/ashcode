@@ -1,42 +1,44 @@
-# ADR-0010：会话管理、用量显示与 Key 设置
+English | [中文](0010-sessions-usage-key.zh.md)
 
-- 状态：Accepted
-- 日期：2026-11-21
-- 版本：0.5.4
+# ADR-0010: Session Management, Usage Display, and Key Settings
 
-## 1. 需求
+- Status: Accepted
+- Date: 2026-11-21
+- Version: 0.5.4
 
-1. 能在 TUI 内切换、新建、删除会话；
-2. 实时看到 token 消耗、缓存命中率、费用；
-3. 让用户能在 TUI 内输入 API Key，而不是只能改文件。
+## 1. Requirements
 
-## 2. 决策
+1. Be able to switch, create, and delete sessions inside the TUI;
+2. See token consumption, cache hit rate, and cost in real time;
+3. Let users enter the API Key inside the TUI, instead of only being able to edit files.
 
-| 需求 | 方案 |
+## 2. Decisions
+
+| Requirement | Approach |
 |---|---|
-| 切换会话 | `/sessions` 居中选择器（标题 + id 尾号，按 mtime 降序）；`Enter` 切换，`Esc` 关闭 |
-| 新建会话 | `/new` 或选择器内 `n`：本地生成新 id，运行时按需创建，清空转录与用量 |
-| 删除会话 | 选择器内 `d` 两次确认，删除 `sessions/<workspace>/<id>` 目录；删除前只做本地判断，不做回收站 |
-| 用量 | 从 `assistant/message` 事件的 `usage` 累加：`inputTokens`（未缓存）、`outputTokens`、`cacheReadTokens`、`cacheWriteTokens`；命中率 = cacheRead / 三者之和 |
-| 费用 | 单价由环境变量提供（每百万 token），未配置则只显示 token；避免内置过时价目表 |
-| API Key | 无 Key 时启动弹窗；`/key` 重开；输入掩码显示，`Enter` 保存到应用目录 `.env.local`，`updateEnv` + 重启运行时生效 |
+| Switch session | `/sessions` opens a centered picker (title + id suffix, sorted by mtime descending); `Enter` switches, `Esc` closes |
+| New session | `/new` or `n` in the picker: generate a new id locally, create it on demand at runtime, clear the transcript and usage |
+| Delete session | `d` twice to confirm in the picker, deleting the `sessions/<workspace>/<id>` directory; only a local check before deletion, no recycle bin |
+| Usage | Accumulated from `usage` in `assistant/message` events: `inputTokens` (uncached), `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`; hit rate = cacheRead / sum of the three |
+| Cost | Unit prices come from environment variables (per million tokens); when unconfigured, only tokens are shown; avoids a built-in stale price table |
+| API Key | Pops up on startup when no key is set; `/key` reopens it; input is masked, `Enter` saves to `.env.local` in the app directory, and `updateEnv` + a runtime restart take effect |
 
-## 3. 实现要点
+## 3. Implementation Highlights
 
-- `StdioSdkPort` 新增 `newSession()`（生成 id、清空 known）与 `updateEnv()`（写入子进程 env 并同步到 `process.env`）。
-- 选择器与 Key 输入复用 `renderModal()`，按 `keyInput → 审批/提问 → picker` 的优先级处理按键。
-- 删除只针对 `sessionDir(id)` 命中的目录，且需要两次 `d`。
-- 切换/新建都会重置 `state.usage` 与转录；恢复会话会重放历史，用量随历史事件累加。
+- `StdioSdkPort` gains `newSession()` (generates an id, clears known) and `updateEnv()` (writes to the child process env and syncs to `process.env`).
+- The picker and Key input reuse `renderModal()`, handling keys in the priority order `keyInput → approval/question → picker`.
+- Deletion targets only the directory matched by `sessionDir(id)`, and requires two `d` presses.
+- Switching/creating both reset `state.usage` and the transcript; resuming a session replays history, and usage accumulates with the history events.
 
-## 4. 验证
+## 4. Verification
 
-- 新增 `session-smoke`（打开选择器、`n` 新建）与 `key-smoke`（无 Key 时出现输入框）。
-- `npm test`：14 项通过（含 cursor/quit/session/key）。
-- `tsc` 通过；安装副本启动 + 真实回合通过。
+- Added `session-smoke` (open the picker, `n` to create) and `key-smoke` (input box appears when no key is set).
+- `npm test`: 14 tests pass (including cursor/quit/session/key).
+- `tsc` passes; the installed copy starts and a real turn passes.
 
-## 5. 遗留
+## 5. Outstanding
 
-- 删除会话没有回收站；误删不可恢复。
-- 会话列表只列当前工作区最近 20 个目录。
-- 费用单价需手动配置，未内置各模型价目。
-- Key 弹窗不支持粘贴（下一步补）。
+- Deleting a session has no recycle bin; accidental deletion is unrecoverable.
+- The session list only lists the 20 most recent directories in the current workspace.
+- Cost unit prices must be configured manually; no per-model price table is built in.
+- The Key dialog does not support pasting (to be added next).
