@@ -1,6 +1,6 @@
-# ashcode
-
 English | [中文](README.zh.md)
+
+# ashcode
 
 > If you already run DSH, what's missing is a good terminal surface. ashcode is that surface.
 

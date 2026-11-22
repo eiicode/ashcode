@@ -1,6 +1,6 @@
-# ashcode
-
 [English](README.md) | 中文
+
+# ashcode
 
 > 用 DSH 的人，缺一个好用的终端门面。ashcode 就是这个门面。
 

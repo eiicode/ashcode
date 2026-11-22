@@ -1,6 +1,6 @@
-# Changelog
-
 English | [中文](CHANGELOG.zh.md)
+
+# Changelog
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 

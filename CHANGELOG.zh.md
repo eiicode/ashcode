@@ -1,6 +1,6 @@
-# Changelog
-
 [English](CHANGELOG.md) | 中文
+
+# Changelog
 
 本项目从 0.1.0 起记录。版本号与 `package.json` 保持一致；发布包命名 `ashcode-<version>-win-x64.zip`。
 
