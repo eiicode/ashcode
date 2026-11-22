@@ -4,6 +4,15 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.5.3 — 2026-11-22
+
+### Fixed
+
+- The slash-command completion is single-column again, with a scrolling window:
+  `↑`/`↓` walk the whole list and the viewport follows the selection, so commands
+  beyond the first eight (`/key`, `/team`, …) stay reachable. Hidden items are
+  announced with `↑N` / `↓N`
+
 ## 1.5.2 — 2026-11-22
 
 ### Fixed

@@ -922,22 +922,31 @@ function redraw(): void {
         : chooser !== undefined ? chooserModal() : undefined
   const modalLines = modal === undefined ? [] : renderModal(modal, frameWidth, palette)
   const completion = state.pending === undefined ? completionItems() : []
-  // Two columns once the list outgrows one screen, so every command stays visible
-  // instead of being cut off by a fixed cap (which kept hiding newer commands).
-  const perRow = completion.length > 6 ? 2 : 1
-  const columnWidth = Math.max(12, Math.floor((frameWidth - PAD) / perRow))
+  // One column, but a window that scrolls with the selection: ↑/↓ walk the whole
+  // list and the viewport follows, so nothing is hidden by a fixed cap.
+  const windowSize = 8
   const activeIndex = Math.min(completionIndex, completion.length - 1)
+  const windowStart = Math.max(0, Math.min(activeIndex - Math.floor(windowSize / 2), completion.length - windowSize))
+  const windowEnd = Math.min(completion.length, windowStart + windowSize)
   const completionRows: RLine[] = []
-  for (let index = 0; index < completion.length; index += perRow) {
-    const spans: Span[] = [{ text: ' '.repeat(PAD) }]
-    for (let column = 0; column < perRow; column += 1) {
-      const item = completion[index + column]
-      if (item === undefined) continue
-      const selected = index + column === activeIndex
-      const cell = `${selected ? '>' : ' '} ${item}`
-      spans.push({ text: padTo(cell, columnWidth), fg: palette.accent, bold: selected })
-    }
-    completionRows.push({ spans })
+  for (let index = windowStart; index < windowEnd; index += 1) {
+    const selected = index === activeIndex
+    const label = completion[index] ?? ''
+    const edge = index === windowStart && windowStart > 0
+      ? ` ↑${windowStart}`
+      : index === windowEnd - 1 && windowEnd < completion.length
+        ? ` ↓${completion.length - windowEnd}`
+        : ''
+    completionRows.push({
+      spans: [
+        {
+          text: `${' '.repeat(PAD)}${selected ? '>' : ' '} ${label}`,
+          fg: palette.accent,
+          bold: selected,
+        },
+        ...(edge === '' ? [] : [{ text: edge, fg: palette.dim }]),
+      ],
+    })
   }
 
   const fixed = 5 + composerRows.length + completionRows.length + modalLines.length + (state.todos.length > 0 ? 1 : 0)
