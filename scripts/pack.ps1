@@ -21,7 +21,7 @@ $stage = Join-Path ([System.IO.Path]::GetTempPath()) $name
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 
-$include = @('src', 'bin', 'scripts', 'docs', 'package.json', 'README.md', 'README.zh.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'tsconfig.json', '.gitignore', 'install.cmd', 'uninstall.cmd')
+$include = @('src', 'bin', 'scripts', 'docs', 'package.json', 'README.md', 'README.zh.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'CHANGELOG.en.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'tsconfig.json', '.gitignore', 'install.cmd', 'uninstall.cmd')
 foreach ($item in $include) {
   $source = Join-Path $root $item
   if (-not (Test-Path $source)) { continue }

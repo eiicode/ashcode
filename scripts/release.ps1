@@ -44,16 +44,27 @@ if ([string]::IsNullOrWhiteSpace($Name)) { $Name = "ashcode $($pkg.version)" }
 if ([string]::IsNullOrWhiteSpace($Zip)) { $Zip = Join-Path $root "dist\ashcode-$($pkg.version)-win-x64.zip" }
 if (-not (Test-Path $Zip)) { throw "release asset not found: $Zip (run scripts/pack.ps1 first)" }
 
-# Release body = the matching CHANGELOG section.
-$lines = Get-Content (Join-Path $root 'CHANGELOG.md') -Encoding UTF8
-$start = -1
-$end = $lines.Count
-for ($i = 0; $i -lt $lines.Count; $i++) {
-  if ($lines[$i] -match "^## $([regex]::Escape($pkg.version))\b") { $start = $i; continue }
-  if ($start -ge 0 -and $i -gt $start -and $lines[$i] -match '^## ') { $end = $i; break }
+# Release body = the matching CHANGELOG section, plus its English mirror.
+function Get-ChangelogSection {
+  param([string]$Path, [string]$Version)
+  if (-not (Test-Path $Path)) { return $null }
+  $lines = Get-Content $Path -Encoding UTF8
+  $start = -1
+  $end = $lines.Count
+  for ($i = 0; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -match "^## $([regex]::Escape($Version))\b") { $start = $i; continue }
+    if ($start -ge 0 -and $i -gt $start -and $lines[$i] -match '^## ') { $end = $i; break }
+  }
+  if ($start -lt 0) { return $null }
+  return ($lines[($start + 1)..($end - 1)] -join "`n").Trim()
 }
-if ($start -lt 0) { throw "no CHANGELOG section for $($pkg.version)" }
-$body = ($lines[($start + 1)..($end - 1)] -join "`n").Trim()
+
+$body = Get-ChangelogSection -Path (Join-Path $root 'CHANGELOG.md') -Version $pkg.version
+if ([string]::IsNullOrWhiteSpace($body)) { throw "no CHANGELOG section for $($pkg.version)" }
+$englishBody = Get-ChangelogSection -Path (Join-Path $root 'CHANGELOG.en.md') -Version $pkg.version
+if (-not [string]::IsNullOrWhiteSpace($englishBody)) {
+  $body = "$body`n`n---`n`n## English`n`n$englishBody"
+}
 "tag:     $Tag"
 "name:    $Name"
 "repo:    $Repo"
