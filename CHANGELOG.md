@@ -2,6 +2,13 @@
 
 本项目从 0.1.0 起记录。版本号与 `package.json` 保持一致；发布包命名 `ashcode-<version>-win-x64.zip`。
 
+## 1.3.1 — 2026-11-22
+
+### Fixed
+
+- 安装器在 npm 输出警告到 stderr 且调用方合并了流（`2>&1`、CI 日志、包装脚本）时会中途终止，留下缺 `node_modules` 的应用目录。依赖安装阶段现在临时把 `$ErrorActionPreference` 设为 `Continue`，失败仍由退出码判断
+- 补齐依赖安装脚本的执行（`npm approve-scripts --all` + `npm rebuild`），原先的 `try/catch` 因外部命令失败不抛异常而静默跳过
+
 ## 1.3.0 — 2026-11-22
 
 ### Added

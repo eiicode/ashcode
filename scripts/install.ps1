@@ -186,6 +186,11 @@ $dshModule = Join-Path $appDir 'node_modules\@deepseek-ai\dsh'
 if (-not (Test-Path $dshModule)) {
   Write-Host '  dependencies: installing (first run, takes a few minutes)...' -ForegroundColor Yellow
   Push-Location $appDir
+  # npm writes warnings (e.g. EBADENGINE) to stderr. With ErrorActionPreference=Stop
+  # any caller that merges streams — `2>&1`, CI logs, a wrapper — would turn those
+  # into a terminating error and leave a half-installed app directory behind.
+  $previousPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
   try {
     & npm install --no-audit --no-fund | Out-Null
     if ($LASTEXITCODE -ne 0) {
@@ -193,13 +198,12 @@ if (-not (Test-Path $dshModule)) {
       & npm install --legacy-peer-deps --no-audit --no-fund | Out-Null
     }
     if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }
-    # npm 11 blocks dependency install scripts by default; approve and build
-    # them so native pieces (sandbox FFI, pty) work.
-    try {
-      & npm approve-scripts --all 2>$null | Out-Null
-      & npm rebuild 2>$null | Out-Null
-    } catch { Write-Host '  note: dependency install scripts were not rebuilt' -ForegroundColor Yellow }
-  } finally { Pop-Location }
+    & npm approve-scripts --all | Out-Null
+    & npm rebuild | Out-Null
+  } finally {
+    $ErrorActionPreference = $previousPreference
+    Pop-Location
+  }
 }
 foreach ($required in @('@deepseek-ai\dsh', '@deepseek-ai\cordis-plugin-group')) {
   if (-not (Test-Path (Join-Path $appDir "node_modules\$required"))) {
