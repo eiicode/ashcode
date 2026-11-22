@@ -62,8 +62,9 @@ function Get-ChangelogSection {
 $body = Get-ChangelogSection -Path (Join-Path $root 'CHANGELOG.md') -Version $pkg.version
 if ([string]::IsNullOrWhiteSpace($body)) { throw "no CHANGELOG section for $($pkg.version)" }
 $englishBody = Get-ChangelogSection -Path (Join-Path $root 'CHANGELOG.en.md') -Version $pkg.version
+# English first: GitHub previews only the first lines of a release body.
 if (-not [string]::IsNullOrWhiteSpace($englishBody)) {
-  $body = "$body`n`n---`n`n## English`n`n$englishBody"
+  $body = "$englishBody`n`n---`n`n## 中文`n`n$body"
 }
 "tag:     $Tag"
 "name:    $Name"
