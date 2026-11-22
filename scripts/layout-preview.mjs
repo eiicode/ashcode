@@ -43,6 +43,6 @@ const blocks = [
   { kind: 'system', text: 'turn finished: completed' },
 ]
 
-const lines = renderBlocks(blocks, { width, palette, toolsExpanded: false })
+const lines = renderBlocks(blocks, { width, palette, toolsExpanded: false, showThinking: process.argv[4] === 'expand' })
 const text = lines.map(line => line.spans.map(span => span.text).join('')).join('\n')
 console.log(text)

@@ -4,6 +4,24 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.4.0 — 2026-11-22
+
+Progress reporting moves closer to the DSH Web UI: reasoning is no longer
+truncated, and task progress stays visible.
+
+### Added
+
+- Thinking blocks keep their full text and render collapsed as
+  `✦ thinking · 45s · 3 lines · Ctrl+T`; press `Ctrl+T` to expand (previously only
+  the first line was kept, capped at 90 characters, so long reasoning was lost)
+- A one-line todo summary above the status bar: `▸ 任务 2/7 · 进行中: …`, fed by the
+  whole-list snapshot from the `todo_write` tool
+
+### Changed
+
+- The header timer now carries the current phase: `working 12s · 分析请求` /
+  `深度思考` / `执行工具` / `生成回复`
+
 ## 1.3.1 — 2026-11-22
 
 ### Fixed

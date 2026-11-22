@@ -82,6 +82,10 @@ const state = {
   scroll: 0,
   toolsExpanded: false,
   showThinking: false,
+  /** Latest todo_write snapshot (whole-list replacement, as the tool defines it). */
+  todos: [] as Array<{ content: string; status: string }>,
+  /** Coarse turn phase, shown next to the header spinner. */
+  phase: '' as '' | 'analyzing' | 'thinking' | 'tool' | 'responding',
   usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   model: process.env.ASHCODE_MODEL ?? 'deepseek-flash',
   effort: process.env.ASHCODE_EFFORT ?? 'high',
@@ -231,8 +235,31 @@ function usageSummary(): string {
   return parts.join(' ')
 }
 
+/** One-line todo summary, mirroring DSH's task panel: done/total plus the active item. */
+function todoLine(width: number): RLine {
+  const total = state.todos.length
+  const done = state.todos.filter(item => item.status === 'completed').length
+  const active = state.todos.find(item => item.status === 'in_progress')
+  const pending = state.todos.filter(item => item.status === 'pending').length
+  const tail = active !== undefined
+    ? ` · 进行中: ${active.content}`
+    : pending > 0 ? ` · ${pending} 待处理` : ' · 全部完成'
+  return {
+    spans: [{
+      text: clipDisplay(`▸ 任务 ${done}/${total}${tail}`, width),
+      fg: active !== undefined ? palette.accent : palette.dim,
+    }],
+  }
+}
+
 function headerLine(width: number): RLine {
-  const busyText = state.busy ? `working ${((Date.now() - state.startedAt) / 1000).toFixed(0)}s` : 'idle'
+  const phaseLabel = state.phase === 'analyzing' ? '分析请求'
+    : state.phase === 'thinking' ? '深度思考'
+      : state.phase === 'tool' ? '执行工具'
+        : state.phase === 'responding' ? '生成回复' : ''
+  const busyText = state.busy
+    ? `working ${((Date.now() - state.startedAt) / 1000).toFixed(0)}s${phaseLabel === '' ? '' : ` · ${phaseLabel}`}`
+    : 'idle'
   const mode = state.plan ? 'PLAN' : 'BUILD'
   const spans: Span[] = [
     { text: `ashcode  ·  ${modelLabel(state.model)}  ·  ${state.effort}  ·  `, fg: palette.accent, bold: true },
@@ -819,10 +846,11 @@ function buildBody(): { lines: RLine[]; width: number } {
     width,
     palette,
     toolsExpanded: state.toolsExpanded,
+    showThinking: state.showThinking,
     search: search.active ? search.query : undefined,
     linkPath: (path: string) => `file:///${resolve(cwd, path).replace(/\\/g, '/')}`,
   }
-  return { lines: renderBlocks(blocks.filter(block => block.kind !== 'thinking' || state.showThinking), ctx), width }
+  return { lines: renderBlocks(blocks, ctx), width }
 }
 
 function dimSpan(line: RLine): RLine {
@@ -878,7 +906,7 @@ function redraw(): void {
     }],
   }))
 
-  const fixed = 5 + composerRows.length + completionRows.length + modalLines.length
+  const fixed = 5 + composerRows.length + completionRows.length + modalLines.length + (state.todos.length > 0 ? 1 : 0)
   const page = Math.max(4, renderer.height - fixed)
   const maxScroll = Math.max(0, lines.length - page)
   state.scroll = Math.min(Math.max(0, state.scroll), maxScroll)
@@ -915,6 +943,7 @@ function redraw(): void {
     push({ spans: [{ text: padTo(banner, frameWidth), fg: palette.bg, bg: palette.warn, bold: true }] })
   }
   push({ spans: [{ text: '' }] })
+  if (state.todos.length > 0) push(todoLine(frameWidth))
   push(status)
   for (const line of composerRows) push(line)
   composerBottomRow = pushedLines - 1
@@ -934,6 +963,12 @@ function pushBlock(block: Block): void {
   scheduleRedraw()
 }
 
+/** Seal the trailing reasoning block so its elapsed time stops counting. */
+function closeThinking(): void {
+  const last = blocks[blocks.length - 1]
+  if (last?.kind === 'thinking' && last.endedAt === undefined) last.endedAt = Date.now()
+}
+
 function project(event: SessionEvent): void {
   const data = (event.data ?? {}) as Record<string, any>
   switch (event.type) {
@@ -943,6 +978,7 @@ function project(event: SessionEvent): void {
       state.turnOutputStart = state.usage.output
       state.startedAt = state.startedAt || Date.now()
       state.note = 'working…'
+      state.phase = 'analyzing'
       break
     case 'turn/end':
       state.busy = false
@@ -950,6 +986,8 @@ function project(event: SessionEvent): void {
       state.lastTurnOutput = Math.max(0, state.usage.output - state.turnOutputStart)
       state.startedAt = 0
       state.note = 'idle'
+      state.phase = ''
+      closeThinking()
       break
     case 'step/start':
       state.steps += 1
@@ -978,10 +1016,20 @@ function project(event: SessionEvent): void {
       for (const block of data.message?.content ?? []) {
         if (block.type === 'text' && block.text) parts.push(String(block.text))
         else if (block.type === 'reasoning' && block.text) {
-          pushBlock({ kind: 'thinking', text: String(block.text).split('\n')[0].slice(0, 90) })
+          const text = String(block.text)
+          const last = blocks[blocks.length - 1]
+          if (last?.kind === 'thinking' && last.endedAt === undefined) {
+            last.text += text
+            scheduleRedraw()
+          } else {
+            pushBlock({ kind: 'thinking', text, startedAt: Date.now() })
+          }
+          state.phase = 'thinking'
         }
       }
       if (parts.length > 0) {
+        closeThinking()
+        state.phase = 'responding'
         const text = parts.join('\n')
         const last = blocks[blocks.length - 1]
         if (last?.kind === 'assistant' && id !== '' && id === lastAssistantId) last.text += `\n${text}`
@@ -1000,9 +1048,16 @@ function project(event: SessionEvent): void {
     }
     case 'tool/call': {
       state.tools += 1
+      state.phase = 'tool'
       const args = (() => {
         try { return JSON.parse(String(data.arguments ?? '{}')) as Record<string, any> } catch { return {} }
       })()
+      const callName = String(data.name ?? '')
+      if (callName === 'todo_write' && Array.isArray(args.todos)) {
+        state.todos = (args.todos as unknown[])
+          .filter((item): item is Record<string, unknown> => item !== null && typeof item === 'object' && typeof (item as any).content === 'string')
+          .map(item => ({ content: String(item.content), status: String(item.status ?? 'pending') }))
+      }
       const tool: ToolBlock = {
         kind: 'tool',
         id: String(data.callId ?? ''),

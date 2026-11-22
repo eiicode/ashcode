@@ -18,8 +18,16 @@ export interface ToolBlock {
 }
 
 export interface TextBlock {
-  kind: 'user' | 'assistant' | 'thinking' | 'system' | 'error'
+  kind: 'user' | 'assistant' | 'system' | 'error'
   text: string
+}
+
+/** Reasoning stream: kept whole, rendered collapsed with its duration. */
+export interface ThinkingBlock {
+  kind: 'thinking'
+  text: string
+  startedAt: number
+  endedAt?: number
 }
 
 export interface PlanBlock {
@@ -28,7 +36,7 @@ export interface PlanBlock {
   items: Array<{ text: string; done: boolean }>
 }
 
-export type Block = TextBlock | ToolBlock | PlanBlock
+export type Block = TextBlock | ThinkingBlock | ToolBlock | PlanBlock
 
 export interface RLine { spans: Span[] }
 
@@ -36,6 +44,7 @@ export interface RenderContext {
   width: number
   palette: Palette
   toolsExpanded: boolean
+  showThinking: boolean
   search?: string
   /** Map a path to a file URL so terminal links open in the editor. */
   linkPath?: (path: string) => string
@@ -313,14 +322,26 @@ export function renderBlocks(blocks: Block[], ctx: RenderContext): RLine[] {
       case 'assistant':
         out.push(...renderMarkdown(block.text, ctx.width, md))
         break
-      case 'thinking':
-        out.push({
-          spans: [
-            { text: '· thinking ', fg: ctx.palette.dim, dim: true },
-            { text: block.text.split('\n')[0]?.slice(0, 90) ?? '', fg: ctx.palette.dim, dim: true },
-          ],
-        })
+      case 'thinking': {
+        const started = block.startedAt ?? Date.now()
+        const elapsed = ((block.endedAt ?? Date.now()) - started) / 1000
+        const meta = elapsed >= 1 ? ` · ${elapsed.toFixed(0)}s` : ''
+        if (!ctx.showThinking) {
+          const lineCount = block.text.split('\n').filter(line => line.trim() !== '').length
+          out.push({
+            spans: [
+              { text: '✦ thinking', fg: ctx.palette.dim, dim: true },
+              { text: `${meta} · ${lineCount} line${lineCount === 1 ? '' : 's'} · Ctrl+T`, fg: ctx.palette.dim, dim: true },
+            ],
+          })
+          break
+        }
+        out.push({ spans: [{ text: `✦ thinking${meta}`, fg: ctx.palette.accent, dim: true }] })
+        for (const line of block.text.split('\n')) {
+          out.push({ spans: [{ text: `  ${line}`, fg: ctx.palette.dim, dim: true }] })
+        }
         break
+      }
       case 'system':
         out.push({ spans: [{ text: '· ', fg: ctx.palette.dim }, { text: block.text, fg: ctx.palette.sys }] })
         break
