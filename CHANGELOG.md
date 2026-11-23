@@ -4,6 +4,37 @@ English | [中文](CHANGELOG.zh.md)
 
 Version headings must match `CHANGELOG.zh.md` exactly.
 
+## 1.8.3 — 2026-11-23
+
+### Fixed
+
+- The installer aborted when Bun was missing: resolving `bun.exe` used `where.exe`,
+  whose "not found" line on stderr becomes a terminating error in Windows
+  PowerShell 5.1 under `$ErrorActionPreference='Stop'`, so the step that installs
+  Bun was never reached. Lookup is pure PowerShell now, and it also covers npm 11's
+  global prefix, which puts `bun.exe` beside `node.exe` instead of `%APPDATA%\npm`
+- `npm install -g bun` reported success but left no binary: npm >= 11.19 blocks
+  lifecycle scripts by default and Bun ships its executable from a postinstall.
+  The installer passes `--allow-scripts=bun` and falls back to a plain install on
+  older npm
+- A silent three-to-five minute `npm install` looked like a hang. Every dependency
+  step now prints a spinner with elapsed seconds plus an `ok`/`failed` result, the
+  removal of a previous install is announced, and npm's own output is shown when a
+  step fails
+- Pasting into the API key prompt did nothing in cmd.exe: conhost handles Ctrl+V
+  itself and never emits a bracketed-paste event, and the prompt dropped any
+  sequence longer than one character. Ctrl+V and Shift+Insert read the OS clipboard
+  directly (`Get-Clipboard` on Windows) and pasted text of any length lands in the
+  field
+- The right edge kept stale console cells on terminals wider than ~105 columns: the
+  layout was capped at 100 columns and padded only to 102, so nothing repainted the
+  rest. The frame now spans the window, one column is kept for the scrollbar, and
+  the sidebar's `' │ '` separator counts against its width budget instead of
+  pushing rows past the frame
+- The sidebar decided its visibility once at startup, so resizing across 120 columns
+  left the width budget disagreeing with the drawn rows. It follows the window now,
+  unless Ctrl+B pinned it
+
 ## 1.8.2 — 2026-11-23
 
 ### Changed

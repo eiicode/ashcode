@@ -5,6 +5,7 @@
  * renderBlocks(): everything shown is projected from DSH session events.
  */
 import { StyledText, TextRenderable, createCliRenderer, createTextAttributes, type TextChunk } from '@opentui/core'
+import { execFileSync } from 'node:child_process'
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { zstdDecompressSync } from 'node:zlib'
 import { homedir } from 'node:os'
@@ -145,6 +146,8 @@ let replaying = false
 let recovering = false
 let lastAssistantId = ''
 let search: { active: boolean; query: string } = { active: false, query: '' }
+/** Ctrl+B sets this: an explicit sidebar choice outranks the width heuristic. */
+let sidebarPinned = false
 
 interface PickerItem { id: string; title: string; at: number }
 let picker: { items: PickerItem[]; selected: number; deleteArmed: boolean } | undefined
@@ -164,16 +167,21 @@ renderer.root.add(view)
 // Without this the transcript keeps the layout it was drawn with, so narrowing
 // the terminal simply clips the header and status lines until the next event.
 renderer.on('resize', () => {
+  // Growing past the sidebar threshold (or shrinking back below it) changes the
+  // width budget; follow the window unless the user pinned the sidebar open.
+  if (!sidebarPinned && (renderer.width >= 120) !== state.sidebar) {
+    state.sidebar = renderer.width >= 120
+  }
   scheduleRedraw()
 })
 
-const contentWidth = (): number => {
-  const sidebarWidth = state.sidebar ? 25 : 0
-  // One column is always reserved for the scrollbar so wrapping never jitters
-  // when content crosses the "scrollable" threshold.
-  return Math.max(24, Math.min(100, renderer.width - PAD * 2 - sidebarWidth - 1))
-}
-const layoutWidth = (): number => Math.max(40, Math.min(100, renderer.width - PAD * 2 - 1))
+// The frame spans the whole window — the left PAD margin, the content, and one
+// column kept free for the scrollbar — so every row repaints the full line and
+// the terminal cannot keep stale cells to the right of the text. contentWidth
+// must match the row layout (`sidebar + ' │ ' + content`), which is why the
+// separator counts against the sidebar budget.
+const layoutWidth = (): number => Math.max(40, renderer.width - PAD - 1)
+const contentWidth = (): number => Math.max(24, layoutWidth() - (state.sidebar ? 25 + 3 : 0))
 
 let sidebarItems: PickerItem[] = []
 
@@ -1575,13 +1583,45 @@ function jumpToSearch(): void {
   }
 }
 
+/**
+ * Read the OS clipboard. Classic conhost (cmd.exe) grabs Ctrl+V itself and
+ * never emits a bracketed-paste event, so the TUI asks the clipboard directly
+ * instead of relying on the terminal.
+ */
+function readClipboard(): string {
+  try {
+    if (process.platform === 'win32') {
+      return execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Get-Clipboard -Raw'], {
+        encoding: 'utf8',
+        timeout: 8000,
+        windowsHide: true,
+      })
+    }
+    if (process.platform === 'darwin') return execFileSync('pbpaste', [], { encoding: 'utf8', timeout: 4000 })
+    return execFileSync('xclip', ['-selection', 'clipboard', '-o'], { encoding: 'utf8', timeout: 4000 })
+  } catch {
+    return ''
+  }
+}
+
 renderer.keyInput.on('keypress', (key: { name?: string; sequence?: string; ctrl?: boolean; meta?: boolean; shift?: boolean }) => {
+  // Paste first: a terminal that handles Ctrl+V itself swallows the key, so
+  // read the clipboard here rather than waiting for a paste event.
+  if ((key.ctrl === true && (key.name === 'v' || key.sequence === '\u0016'))
+    || (key.shift === true && key.name === 'insert')) {
+    const clipboard = readClipboard()
+    if (clipboard !== '') { applyPaste(clipboard); return }
+  }
+
   if (keyInput !== undefined) {
     if (key.name === 'escape') { keyInput = undefined; redraw(); return }
     if (key.name === 'backspace') { keyInput.value = keyInput.value.slice(0, -1); redraw(); return }
     if (key.name === 'return' || key.name === 'enter') { void saveApiKey(); return }
+    // Multi-character sequences are the whole pasted text when the terminal
+    // sends paste without bracketed markers; a single character is ordinary
+    // typing. Both belong in the field.
     if (key.ctrl !== true && key.meta !== true && key.sequence !== undefined
-      && key.sequence.length === 1 && !key.sequence.includes('\u001b')) {
+      && !key.sequence.includes('\u001b') && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(key.sequence)) {
       keyInput.value += key.sequence
       redraw()
     }
@@ -1733,6 +1773,7 @@ renderer.keyInput.on('keypress', (key: { name?: string; sequence?: string; ctrl?
   if (key.ctrl === true && key.name === 'o') { toggleTools(); return }
   if (key.ctrl === true && key.name === 'b') {
     state.sidebar = !state.sidebar
+    sidebarPinned = true
     refreshSidebar()
     redraw()
     return
@@ -1793,13 +1834,12 @@ renderer.keyInput.on('keypress', (key: { name?: string; sequence?: string; ctrl?
   }
 })
 
-renderer.keyInput.on('paste', (event: { bytes?: unknown }) => {
-  const bytes = event?.bytes
-  const text = typeof bytes === 'string' ? bytes
-    : bytes instanceof Uint8Array ? new TextDecoder().decode(bytes) : String(bytes ?? '')
-  const clean = text.replace(/\r\n?/g, '\n').replace(/\u0000/g, '')
+/** Route pasted text to whatever is focused: key field, question panel, composer. */
+function applyPaste(raw: string): void {
+  const clean = raw.replace(/\r\n?/g, '\n').replace(/\u0000/g, '')
   if (clean === '') return
   if (keyInput !== undefined) {
+    // An API key has no spaces or newlines; drop anything a shell added.
     keyInput.value += clean.replace(/\s+/g, '')
     redraw()
     return
@@ -1809,10 +1849,15 @@ renderer.keyInput.on('paste', (event: { bytes?: unknown }) => {
     if (panel.kind === 'question') { panel.custom += clean.replace(/\n/g, ' '); redraw() }
     return
   }
-  const rows = clean.split('\n')
-  void rows
   insertText(clean)
   redraw()
+}
+
+renderer.keyInput.on('paste', (event: { bytes?: unknown }) => {
+  const bytes = event?.bytes
+  const text = typeof bytes === 'string' ? bytes
+    : bytes instanceof Uint8Array ? new TextDecoder().decode(bytes) : String(bytes ?? '')
+  applyPaste(text)
 })
 
 const RESET_SEQUENCES = '\u001b[?1000l\u001b[?1002l\u001b[?1003l\u001b[?1005l\u001b[?1006l\u001b[?25h\u001b[?1049l\u001b[0m'

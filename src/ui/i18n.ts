@@ -44,7 +44,7 @@ const EN = {
 
   keyDetail: 'Enter your DeepSeek API key. It is saved to .env.local in the app directory and the runtime restarts.',
   keySave: 'Save',
-  keyHint: 'Enter save · Esc cancel',
+  keyHint: 'Ctrl+V paste · Enter save · Esc cancel',
 
   chooserHint: '↑/↓ select · Enter apply (restarts the runtime and opens a new session) · Esc cancel',
   quitBanner: ' ⚠  Press Ctrl+C again to quit (within 3s) · Esc cancels ',
@@ -105,7 +105,7 @@ const ZH: Record<keyof typeof EN, string> = {
 
   keyDetail: '输入 DeepSeek API Key，保存到应用目录的 .env.local 并重启运行时。',
   keySave: '保存',
-  keyHint: 'Enter 保存 · Esc 取消',
+  keyHint: 'Ctrl+V 粘贴 · Enter 保存 · Esc 取消',
 
   chooserHint: '↑/↓ 选择 · Enter 应用（会重启运行时并开新会话）· Esc 取消',
   quitBanner: ' ⚠  再按一次 Ctrl+C 退出（3 秒内）· Esc 取消 ',

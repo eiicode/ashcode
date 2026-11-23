@@ -4,6 +4,17 @@
 
 本项目从 0.1.0 起记录。版本号与 `package.json` 保持一致；发布包命名 `ashcode-<version>-win-x64.zip`。
 
+## 1.8.3 — 2026-11-23
+
+### Fixed
+
+- 没装 Bun 时安装器直接中止：解析 `bun.exe` 用了 `where.exe`，它输出到 stderr 的「找不到」在 Windows PowerShell 5.1 + `$ErrorActionPreference='Stop'` 下会变成终止性错误，导致「去安装 Bun」这一步永远走不到。改为纯 PowerShell 查找，并覆盖 npm 11 把全局包装到 `node.exe` 同级而不是 `%APPDATA%\npm` 的情况
+- `npm install -g bun` 报告成功却没有可执行文件：npm ≥ 11.19 默认拦截生命周期脚本，Bun 的二进制来自 postinstall。安装器改用 `--allow-scripts=bun`，旧版 npm 自动回退普通安装
+- 依赖安装静默 3~5 分钟，看起来像卡死。现在每一步都打印带已用秒数的进度和 `ok`/`failed` 结果，替换旧安装前会提示，失败时把 npm 自己的输出打出来
+- 在 cmd.exe 里无法把 API Key 粘进弹窗：conhost 自己处理 Ctrl+V，不会发出 bracketed paste 事件，而弹窗又会丢掉长度大于 1 的 sequence。现在 Ctrl+V 与 Shift+Insert 直接读系统剪贴板（Windows 用 `Get-Clipboard`），任意长度的粘贴都能进输入框
+- 终端宽于约 105 列时右侧保留旧的控制台内容：布局被硬性限制在 100 列、每行只补齐到 102 列，右边从不重画。现在整帧铺满窗口（保留 1 列给滚动条），侧栏的 `' │ '` 分隔符也计入宽度预算，行不再溢出
+- 侧栏只在启动时判断一次可见性，跨过 120 列缩放窗口后宽度预算与实际画出的行不一致。现在会跟随窗口变化，按过 Ctrl+B 手动固定后不再自动改动
+
 ## 1.8.2 — 2026-11-23
 
 ### Changed
